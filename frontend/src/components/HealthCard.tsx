@@ -8,6 +8,14 @@ interface HealthCardProps {
 
 export const HealthCard: React.FC<HealthCardProps> = ({ connection }) => {
   if (connection.status === 'offline') {
+    const is404 = connection.error?.includes('404');
+    const isTimeout = connection.error?.toLowerCase().includes('time');
+    const cardTitle = is404
+      ? 'API Route Not Found (HTTP 404)'
+      : isTimeout
+        ? 'Connection Timed Out (Cold Starting)'
+        : 'Backend Server Offline';
+
     return (
       <div className="p-5 rounded-xl bg-rose-950/20 border border-rose-500/30 backdrop-blur-sm space-y-4">
         <div className="flex items-center gap-3">
@@ -15,19 +23,30 @@ export const HealthCard: React.FC<HealthCardProps> = ({ connection }) => {
             <AlertTriangle className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-rose-200">Backend Server Offline</h3>
+            <h3 className="text-sm font-semibold text-rose-200">{cardTitle}</h3>
             <p className="text-xs text-rose-400/80">
-              {connection.error || 'Failed to reach FastAPI server at http://127.0.0.1:8000/api/health'}
+              {connection.error || 'Unable to connect to backend API server.'}
             </p>
           </div>
         </div>
 
-        <div className="bg-obsidian-950/80 rounded-lg p-3 border border-surface-border text-xs font-mono space-y-2">
-          <p className="text-slate-400 text-[11px]">To start the backend in another terminal:</p>
-          <div className="bg-surface-card p-2 rounded text-cyber-cyan select-all">
-            backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+        {is404 && (
+          <div className="bg-obsidian-950/80 rounded-lg p-3 border border-amber-500/30 text-xs text-slate-300 space-y-1">
+            <p className="font-semibold text-amber-300">Backend responded, but the requested endpoint was not found.</p>
+            <p className="text-slate-400 text-[11px]">
+              Verify that <code className="text-cyber-cyan">VITE_API_BASE_URL</code> points to the root of your backend (e.g. <code className="text-cyber-cyan">https://da-vinci-code-search-engine.onrender.com</code>) without extra subpaths.
+            </p>
           </div>
-        </div>
+        )}
+
+        {import.meta.env.DEV && (
+          <div className="bg-obsidian-950/80 rounded-lg p-3 border border-surface-border text-xs font-mono space-y-2">
+            <p className="text-slate-400 text-[11px]">To start the backend in another terminal:</p>
+            <div className="bg-surface-card p-2 rounded text-cyber-cyan select-all">
+              backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+            </div>
+          </div>
+        )}
       </div>
     );
   }

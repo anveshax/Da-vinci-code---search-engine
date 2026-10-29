@@ -74,7 +74,7 @@ export const App: React.FC = () => {
     } catch (err: unknown) {
       setIsSearching(false);
       const errMsg = err instanceof Error ? err.message : 'Search failed';
-      alert(`Search error: ${errMsg}\nMake sure the backend server is running on http://127.0.0.1:8000`);
+      alert(`Search Error:\n\n${errMsg}`);
     }
   };
 
