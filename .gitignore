@@ -1,0 +1,24 @@
+# Dependencies & Environments
+backend/.venv/
+node_modules/
+.env
+.env.local
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Frontend build artifacts
+frontend/dist/
+frontend/dist-ssr/
+*.local
+
+# System & IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
