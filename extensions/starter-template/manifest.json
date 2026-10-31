@@ -1,0 +1,21 @@
+{
+  "id": "vendor.my-tool",
+  "name": "My Custom Tool",
+  "version": "1.0.0",
+  "sdkVersion": "1.0.0",
+  "description": "A customized productivity tool built for the Anvesha AI Developer Platform.",
+  "author": "Independent Engineering Team",
+  "permissions": [
+    "storage:read",
+    "storage:write",
+    "ui:sidepanel"
+  ],
+  "entryPoint": {
+    "frontend": "dist/index.js"
+  },
+  "sidePanel": {
+    "title": "My Tool",
+    "icon": "Tool",
+    "defaultWidth": 380
+  }
+}

@@ -1,0 +1,318 @@
+import React, { useState } from 'react';
+import {
+  FolderTree,
+  Command,
+  Volume2,
+  VolumeX,
+  Settings,
+  Menu,
+  ChevronDown,
+  Check,
+  Plus,
+  Blocks,
+  Sun,
+  Moon,
+  Sparkles,
+  Search,
+  Code2,
+  Globe,
+} from 'lucide-react';
+import { Project, ConnectionState, ActiveView } from '../types/api';
+
+interface AppHeaderProps {
+  activeProject: Project | null;
+  projects: Project[];
+  onSelectProject: (project: Project) => void;
+  onCreateProject: (name: string) => void;
+  onOpenCommandPalette: () => void;
+  onOpenSettings: () => void;
+  onOpenAudioModal: () => void;
+  onOpenMobileMenu: () => void;
+  onToggleExtensionPanel: () => void;
+  isExtensionPanelOpen: boolean;
+  soundEnabled: boolean;
+  connection: ConnectionState;
+  // Adaptive Workspace Engine Props
+  adaptiveMode: boolean;
+  onToggleAdaptiveMode: () => void;
+  activeLayout: ActiveView;
+  onSelectLayout: (layout: ActiveView) => void;
+  // Theme Engine Props
+  currentTheme: 'dark' | 'light';
+  onToggleTheme: () => void;
+}
+
+export const AppHeader: React.FC<AppHeaderProps> = ({
+  activeProject,
+  projects,
+  onSelectProject,
+  onCreateProject,
+  onOpenCommandPalette,
+  onOpenSettings,
+  onOpenAudioModal,
+  onOpenMobileMenu,
+  onToggleExtensionPanel,
+  isExtensionPanelOpen,
+  soundEnabled,
+  connection,
+  adaptiveMode,
+  onToggleAdaptiveMode,
+  activeLayout,
+  onSelectLayout,
+  currentTheme,
+  onToggleTheme,
+}) => {
+  const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);
+  const [newProjectName, setNewProjectName] = useState('');
+  const [isCreatingProject, setIsCreatingProject] = useState(false);
+
+  const handleCreateSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newProjectName.trim()) {
+      onCreateProject(newProjectName.trim());
+      setNewProjectName('');
+      setIsCreatingProject(false);
+      setProjectDropdownOpen(false);
+    }
+  };
+
+  return (
+    <header className="h-14 border-b border-white/10 bg-[#000000]/90 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between gap-3 shrink-0 z-30 select-none">
+      {/* Left: Mobile hamburger & Workspace Selector */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={onOpenMobileMenu}
+          className="md:hidden p-1.5 rounded-lg text-[#9aa0a6] hover:text-[#e8eaed] hover:bg-white/10"
+          title="Open Navigation"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+
+        {/* Project / Workspace Dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setProjectDropdownOpen(!projectDropdownOpen)}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.05] border border-white/10 hover:border-white/20 text-xs font-sans text-[#e8eaed] transition-all"
+            title="Switch Workspace Project"
+          >
+            <FolderTree className="w-3.5 h-3.5 text-[#8ab4f8] shrink-0" />
+            <span className="font-medium truncate max-w-[120px] sm:max-w-[180px]">
+              {activeProject?.name || 'Main Repository'}
+            </span>
+            <ChevronDown className="w-3 h-3 text-[#9aa0a6]" />
+          </button>
+
+          {projectDropdownOpen && (
+            <div
+              className="absolute left-0 top-10 z-50 w-64 bg-[#0c101a]/95 border border-white/10 backdrop-blur-2xl rounded-2xl shadow-2xl p-1.5 text-xs font-sans animate-fade-in"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="px-2.5 py-1 text-[11px] uppercase tracking-wider text-[#9aa0a6] border-b border-white/10 mb-1 font-medium">
+                Workspaces ({projects.length})
+              </div>
+
+              <div className="max-h-48 overflow-y-auto space-y-0.5">
+                {projects.map((p) => {
+                  const isSelected = p.id === activeProject?.id;
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => {
+                        onSelectProject(p);
+                        setProjectDropdownOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-left transition-colors ${
+                        isSelected
+                          ? 'bg-[#8ab4f8]/15 text-[#8ab4f8] font-medium'
+                          : 'text-[#e8eaed] hover:bg-white/5'
+                      }`}
+                    >
+                      <span className="truncate">{p.name}</span>
+                      {isSelected && <Check className="w-3.5 h-3.5 text-[#8ab4f8] shrink-0" />}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Create new project input */}
+              <div className="border-t border-white/10 mt-1 pt-1.5">
+                {isCreatingProject ? (
+                  <form onSubmit={handleCreateSubmit} className="flex gap-1.5 p-1">
+                    <input
+                      type="text"
+                      value={newProjectName}
+                      onChange={(e) => setNewProjectName(e.target.value)}
+                      placeholder="Project name..."
+                      autoFocus
+                      className="flex-1 px-2.5 py-1 rounded-lg bg-black/60 border border-white/20 text-xs text-[#e8eaed] placeholder-[#9aa0a6] outline-none"
+                    />
+                    <button
+                      type="submit"
+                      className="px-2.5 py-1 rounded-lg bg-[#8ab4f8] text-[#000000] font-semibold text-xs hover:bg-[#a8c7fa] transition-colors"
+                    >
+                      Add
+                    </button>
+                  </form>
+                ) : (
+                  <button
+                    onClick={() => setIsCreatingProject(true)}
+                    className="w-full flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[#9aa0a6] hover:text-[#e8eaed] hover:bg-white/5 text-[11px]"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-[#8ab4f8]" />
+                    <span>Create New Workspace</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Center: Unified Navigation Mode Switcher */}
+      <div className="hidden lg:flex items-center gap-1 bg-white/[0.04] p-1 rounded-full border border-white/10 text-xs font-sans shadow-sm">
+        <button
+          onClick={onToggleAdaptiveMode}
+          className={`px-3 py-1 rounded-full flex items-center gap-1.5 transition-all ${
+            adaptiveMode
+              ? 'bg-[#8ab4f8]/20 text-[#8ab4f8] font-medium shadow-sm'
+              : 'text-[#9aa0a6] hover:text-[#e8eaed]'
+          }`}
+          title={adaptiveMode ? 'Adaptive Layout Active: Automatically adapts layout based on task' : 'Manual Layout Mode Locked'}
+        >
+          <Sparkles className={`w-3.5 h-3.5 ${adaptiveMode ? 'text-[#8ab4f8] animate-pulse' : 'text-[#9aa0a6]'}`} />
+          <span>Auto-Adapt</span>
+        </button>
+
+        <div className="w-[1px] h-3.5 bg-white/10 mx-0.5" />
+
+        <button
+          onClick={() => onSelectLayout('search')}
+          className={`px-3 py-1 rounded-full flex items-center gap-1.5 transition-all ${
+            activeLayout === 'search' || activeLayout === 'results'
+              ? 'bg-white/10 text-white font-medium shadow-sm'
+              : 'text-[#9aa0a6] hover:text-[#e8eaed]'
+          }`}
+          title="Google-inspired AI Search & Research Engine"
+        >
+          <Search className="w-3.5 h-3.5 text-[#8ab4f8]" />
+          <span>AI Search</span>
+        </button>
+
+        <button
+          onClick={() => onSelectLayout('web_studio')}
+          className={`px-3 py-1 rounded-full flex items-center gap-1.5 transition-all ${
+            activeLayout === 'web_studio'
+              ? 'bg-white/10 text-white font-medium shadow-sm'
+              : 'text-[#9aa0a6] hover:text-[#e8eaed]'
+          }`}
+          title="Web Development & UI Engineering Studio"
+        >
+          <Code2 className="w-3.5 h-3.5 text-[#81c995]" />
+          <span>Web Studio</span>
+        </button>
+
+        <button
+          onClick={() => onSelectLayout('web_intelligence')}
+          className={`px-3 py-1 rounded-full flex items-center gap-1.5 transition-all ${
+            activeLayout === 'web_intelligence'
+              ? 'bg-white/10 text-white font-medium shadow-sm'
+              : 'text-[#9aa0a6] hover:text-[#e8eaed]'
+          }`}
+          title="Web Intelligence, Crawling & Search Index"
+        >
+          <Globe className="w-3.5 h-3.5 text-[#8ab4f8]" />
+          <span>Web Intelligence</span>
+        </button>
+      </div>
+
+      {/* Right: Command Palette, Theme, Telemetry, Sound, Settings */}
+      <div className="flex items-center gap-2 sm:gap-2.5">
+        {/* Command Palette Trigger Button */}
+        <button
+          onClick={onOpenCommandPalette}
+          className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 rounded-full bg-white/[0.05] border border-white/10 hover:border-white/20 text-[#9aa0a6] hover:text-[#e8eaed] text-xs font-sans transition-all group shadow-sm"
+          title="Open Command Palette (Ctrl+K)"
+        >
+          <Command className="w-3.5 h-3.5 text-[#8ab4f8]" />
+          <kbd className="px-1.5 py-0.5 rounded bg-white/5 text-[#9aa0a6] text-[10px] font-mono border border-white/10">
+            ⌘K
+          </kbd>
+        </button>
+
+        {/* Theme Toggle Button (Light/Dark) */}
+        <button
+          onClick={onToggleTheme}
+          className="p-2 rounded-full hover:bg-white/10 text-[#9aa0a6] hover:text-[#e8eaed] transition-colors"
+          title={`Switch to ${currentTheme === 'dark' ? 'Light' : 'Dark'} Theme`}
+        >
+          {currentTheme === 'dark' ? (
+            <Sun className="w-4 h-4 text-[#fdd663]" />
+          ) : (
+            <Moon className="w-4 h-4 text-[#8ab4f8]" />
+          )}
+        </button>
+
+        {/* Backend Telemetry Status Pill */}
+        <div
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-sans border ${
+            connection.status === 'online'
+              ? 'bg-[#137333]/20 border-[#137333]/40 text-[#81c995]'
+              : connection.status === 'connecting'
+              ? 'bg-[#ea8600]/20 border-[#ea8600]/40 text-[#fdd663]'
+              : 'bg-[#c5221f]/20 border-[#c5221f]/40 text-[#f28b82]'
+          }`}
+          title={`Backend status: ${connection.status}${connection.latencyMs ? ` (${connection.latencyMs}ms)` : ''}`}
+        >
+          <span
+            className={`w-1.5 h-1.5 rounded-full ${
+              connection.status === 'online'
+                ? 'bg-[#81c995] animate-pulse'
+                : connection.status === 'connecting'
+                ? 'bg-[#fdd663] animate-ping'
+                : 'bg-[#f28b82]'
+            }`}
+          />
+          <span className="capitalize">{connection.status}</span>
+          {connection.latencyMs !== null && (
+            <span className="text-[#9aa0a6]">({connection.latencyMs}ms)</span>
+          )}
+        </div>
+
+        {/* Extension Platform Drawer Trigger */}
+        <button
+          onClick={onToggleExtensionPanel}
+          className={`p-2 rounded-full transition-all ${
+            isExtensionPanelOpen
+              ? 'bg-[#8ab4f8]/20 text-[#8ab4f8]'
+              : 'text-[#9aa0a6] hover:text-[#e8eaed] hover:bg-white/10'
+          }`}
+          title="Toggle Extension Platform Drawer"
+        >
+          <Blocks className="w-4 h-4" />
+        </button>
+
+        {/* Spatial Audio Quick Trigger Button */}
+        <button
+          onClick={onOpenAudioModal}
+          className={`p-2 rounded-full transition-all ${
+            soundEnabled
+              ? 'bg-[#8ab4f8]/20 text-[#8ab4f8]'
+              : 'text-[#9aa0a6] hover:text-[#e8eaed] hover:bg-white/10'
+          }`}
+          title={soundEnabled ? 'Spatial Audio Active (Click to configure)' : 'Spatial Audio Muted'}
+        >
+          {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+        </button>
+
+        {/* Settings Button */}
+        <button
+          onClick={onOpenSettings}
+          className="p-2 rounded-full hover:bg-white/10 text-[#9aa0a6] hover:text-[#e8eaed] transition-colors"
+          title="Platform Settings"
+        >
+          <Settings className="w-4 h-4" />
+        </button>
+      </div>
+    </header>
+  );
+};

@@ -43,6 +43,23 @@ PASCAL_CASE_PATTERN = re.compile(r"^[A-Z][a-z0-9]+(?:[A-Z0-9][a-z0-9]*)+$")
 SNAKE_CASE_PATTERN = re.compile(r"^[a-z0-9]+(?:_[a-z0-9]+)+$", re.IGNORECASE)
 
 
+# Known major web platforms, services, and navigational destinations
+KNOWN_NAVIGATIONAL_PLATFORMS = {
+    "whatsapp", "facebook", "instagram", "youtube", "google", "github", "linkedin",
+    "amazon", "twitter", "x", "reddit", "netflix", "spotify", "wikipedia", "tiktok",
+    "apple", "microsoft", "claude", "gemini", "chatgpt", "openai", "gmail",
+    "pinterest", "zoom", "quora", "medium", "twitch", "slack", "discord", "canva",
+    "ebay", "walmart", "imdb", "hulu", "disney", "telegram", "yahoo", "bing"
+}
+
+# Known web entities, geographic queries, and knowledge topics
+KNOWN_WEB_ENTITIES = {
+    "delhi", "tokyo", "paris", "london", "india", "weather", "map", "directions",
+    "python", "react", "quantum", "ai", "artificial intelligence", "news", "javascript",
+    "typescript", "rust", "golang", "docker", "kubernetes", "linux"
+}
+
+
 def get_local_filenames(workspace_path: Path) -> Set[str]:
     """
     Scans top-level and first 2 levels of workspace to match direct file queries.
@@ -76,6 +93,15 @@ def classify_query(query: str, workspace_root: str) -> Dict[str, Any]:
     query_lower = clean.lower()
     tokens = clean.split()
 
+    # 0. Navigational intent detection (e.g. "WhatsApp", "Facebook", "YouTube", "GitHub")
+    if any(plat in query_lower.split() or query_lower.startswith(plat) for plat in KNOWN_NAVIGATIONAL_PLATFORMS):
+        return {
+            "mode_selected": "web",
+            "confidence": 0.98,
+            "reason": "Detected navigational query for major web platform or online destination.",
+            "is_navigational": True,
+        }
+
     # 1. File extension match (e.g. "main.py", "App.tsx", "test.json")
     for ext in FILE_EXTENSIONS:
         if ext in query_lower or query_lower.endswith(ext):
@@ -102,21 +128,7 @@ def classify_query(query: str, workspace_root: str) -> Dict[str, Any]:
                 "reason": f"Detected programming language keyword ('{kw}').",
             }
 
-    # 4. Identifier casing patterns (camelCase, snake_case, PascalCase)
-    if len(tokens) == 1:
-        single_word = tokens[0]
-        if (
-            CAMEL_CASE_PATTERN.match(single_word)
-            or PASCAL_CASE_PATTERN.match(single_word)
-            or SNAKE_CASE_PATTERN.match(single_word)
-        ):
-            return {
-                "mode_selected": "code",
-                "confidence": 0.88,
-                "reason": "Detected code symbol identifier pattern.",
-            }
-
-    # 5. Exact match against local filenames in workspace
+    # 4. Exact match against local filenames in workspace
     workspace = Path(workspace_root)
     local_files = get_local_filenames(workspace)
     if query_lower in local_files:
@@ -126,7 +138,15 @@ def classify_query(query: str, workspace_root: str) -> Dict[str, Any]:
             "reason": "Query matches an exact file name in the repository.",
         }
 
-    # 6. Natural language question patterns (e.g. "how to configure CORS")
+    # 5. Known web entities, geographic queries, and knowledge topics
+    if any(ent in query_lower for ent in KNOWN_WEB_ENTITIES):
+        return {
+            "mode_selected": "web",
+            "confidence": 0.92,
+            "reason": "Detected world-wide-web entity or knowledge inquiry.",
+        }
+
+    # 6. Natural language question patterns (e.g. "how to configure CORS", "what is AI")
     for pattern in WEB_QUESTION_PATTERNS:
         if re.search(pattern, query_lower):
             return {
@@ -135,17 +155,33 @@ def classify_query(query: str, workspace_root: str) -> Dict[str, Any]:
                 "reason": "Detected natural language research question pattern.",
             }
 
-    # 7. Multi-word natural language sentences (>4 words without code symbols)
-    if len(tokens) >= 4 and not any(kw in query_lower for kw in CODE_KEYWORDS):
+    # 7. Multi-word natural language sentences without code keywords
+    if len(tokens) >= 2 and not any(kw in query_lower for kw in CODE_KEYWORDS):
         return {
             "mode_selected": "web",
-            "confidence": 0.80,
+            "confidence": 0.85,
             "reason": "Natural language inquiry structure detected.",
         }
 
-    # Default fallback: Treat as local code search with transparent notification
+    # 8. Identifier casing patterns (camelCase, snake_case, PascalCase)
+    # Check if single word matches code identifier casing
+    if len(tokens) == 1:
+        single_word = tokens[0]
+        if (
+            CAMEL_CASE_PATTERN.match(single_word)
+            or PASCAL_CASE_PATTERN.match(single_word)
+            or SNAKE_CASE_PATTERN.match(single_word)
+        ):
+            # If it's a code casing, check if it looks like code or web
+            return {
+                "mode_selected": "code",
+                "confidence": 0.82,
+                "reason": "Detected code symbol identifier pattern.",
+            }
+
+    # Default fallback: Route to web search with transparent notification
     return {
-        "mode_selected": "code",
+        "mode_selected": "web",
         "confidence": 0.75,
-        "reason": "Single keyword without web question markers; routed to local codebase.",
+        "reason": "General web inquiry without local code matches.",
     }

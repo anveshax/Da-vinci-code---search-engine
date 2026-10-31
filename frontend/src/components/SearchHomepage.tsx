@@ -1,392 +1,163 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  Search,
-  Mic,
-  MicOff,
-  X,
-  Sparkles,
-  Sliders,
-  LayoutDashboard,
-  Cpu,
-  Layers,
-  FileCode2,
-  Zap,
-  FolderCode,
-  Globe
-} from 'lucide-react';
-import { ThreeSphere } from './ThreeSphere';
+import React, { useState, useEffect } from 'react';
+import { TopBar } from './TopBar';
+import { SearchBar } from './SearchBar';
+import { EarthGlobe } from './EarthGlobe';
 import { SearchMode } from '../types/api';
-
-// Type definitions for Web Speech API
-interface IWindow extends Window {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  SpeechRecognition?: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  webkitSpeechRecognition?: any;
-}
+import { audioService } from '../services/audioService';
+import { AudioHapticControlsModal } from './AudioHapticControlsModal';
+import { globeSettingsService, resolvePalette, GlobeSettings } from '../services/globeSettings';
 
 interface SearchHomepageProps {
   onSearch: (query: string, mode: SearchMode) => void;
   isSearching: boolean;
   onOpenDashboard: () => void;
   workspacePath?: string;
+  hideTopBar?: boolean;
 }
 
 export const SearchHomepage: React.FC<SearchHomepageProps> = ({
   onSearch,
   isSearching,
   onOpenDashboard,
-  workspacePath,
+  hideTopBar = true,
 }) => {
-  const [query, setQuery] = useState<string>('');
-  const [searchMode, setSearchMode] = useState<SearchMode>('auto');
-  const [isListening, setIsListening] = useState<boolean>(false);
-  const [speechTranscript, setSpeechTranscript] = useState<string>('');
-  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [isAudioModalOpen, setIsAudioModalOpen] = useState<boolean>(false);
+  const [audioSettings, setAudioSettings] = useState(audioService.getSettings());
+  const [globeSettings, setGlobeSettings] = useState<GlobeSettings>(globeSettingsService.getSettings());
   const [reducedMotion, setReducedMotion] = useState<boolean>(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const recognitionRef = useRef<any>(null);
+  const [showGlobe, setShowGlobe] = useState<boolean>(() => {
+    return localStorage.getItem('anvesha_show_globe') !== 'false';
+  });
 
-  // Initialize Speech Recognition once
+  const toggleGlobe = () => {
+    setShowGlobe((prev) => {
+      const next = !prev;
+      localStorage.setItem('anvesha_show_globe', String(next));
+      return next;
+    });
+  };
+
+  // Sync audio settings
   useEffect(() => {
-    const win = window as unknown as IWindow;
-    const SpeechRecognition = win.SpeechRecognition || win.webkitSpeechRecognition;
+    const unsubscribe = audioService.subscribe((settings) => {
+      setAudioSettings(settings);
+    });
+    return unsubscribe;
+  }, []);
 
-    if (SpeechRecognition) {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
+  // Sync globe settings for ambient backdrop
+  useEffect(() => {
+    const unsubscribe = globeSettingsService.subscribe((settings) => {
+      setGlobeSettings(settings);
+    });
+    return unsubscribe;
+  }, []);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      recognition.onresult = (event: any) => {
-        let interimTranscript = '';
-        let finalTranscript = '';
+  // Check prefers-reduced-motion
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+      setReducedMotion(mediaQuery.matches);
 
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-            finalTranscript += event.results[i][0].transcript;
-          } else {
-            interimTranscript += event.results[i][0].transcript;
-          }
-        }
-
-        const currentText = finalTranscript || interimTranscript;
-        setSpeechTranscript(currentText);
-
-        if (finalTranscript) {
-          setQuery(finalTranscript);
-          setIsListening(false);
-          // Automatically trigger search when user finishes speaking
-          setTimeout(() => {
-            onSearch(finalTranscript.trim(), searchMode);
-          }, 300);
-        }
-      };
-
-      recognition.onerror = (event: { error: string }) => {
-        setIsListening(false);
-        if (event.error === 'not-allowed') {
-          setVoiceError('Microphone permission was denied. Please allow microphone access in your browser.');
-        } else if (event.error === 'no-speech') {
-          setVoiceError('No speech detected. Please speak clearly into the microphone.');
-        } else {
-          setVoiceError(`Voice input error: ${event.error}`);
-        }
-        setTimeout(() => setVoiceError(null), 5000);
-      };
-
-      recognition.onend = () => {
-        setIsListening(false);
-      };
-
-      recognitionRef.current = recognition;
+      const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
+      mediaQuery.addEventListener('change', handler);
+      return () => mediaQuery.removeEventListener('change', handler);
     }
-  }, [onSearch]);
+  }, []);
 
-  const toggleVoiceSearch = () => {
-    setVoiceError(null);
-    if (!recognitionRef.current) {
-      setVoiceError('Speech recognition is not supported in this browser. Please type your query.');
-      setTimeout(() => setVoiceError(null), 4000);
-      return;
-    }
-
-    if (isListening) {
-      recognitionRef.current.stop();
-      setIsListening(false);
-    } else {
-      setSpeechTranscript('');
-      try {
-        recognitionRef.current.start();
-        setIsListening(true);
-      } catch {
-        recognitionRef.current.stop();
-        setIsListening(false);
-      }
-    }
-  };
-
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (query.trim()) {
-      onSearch(query.trim(), searchMode);
-    }
-  };
-
-  const handleClear = () => {
-    setQuery('');
-    setSpeechTranscript('');
-  };
-
-  const suggestedQueries = [
-    'FastAPI',
-    'CodebaseScanner',
-    'health',
-    'ThreeSphere',
-    'def get_health',
-  ];
+  const palette = resolvePalette(globeSettings);
 
   return (
-    <div className="relative min-h-screen bg-black text-slate-100 flex flex-col justify-between selection:bg-cyber-cyan/30 selection:text-cyber-cyanGlow overflow-x-hidden font-sans">
-      {/* Top Navigation Bar */}
-      <header className="w-full px-6 py-4 flex items-center justify-between z-20">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-cyber-cyan/10 border border-cyber-cyan/30 flex items-center justify-center">
-            <Cpu className="w-4 h-4 text-cyber-cyan" />
-          </div>
-          <span className="text-xs font-mono font-bold tracking-widest text-slate-300 uppercase">
-            CIE &bull; Studio
-          </span>
+    <div
+      className="relative w-full h-full overflow-hidden flex flex-col justify-between select-none bg-[#000000]"
+    >
+      {/* 64px Top Navigation Bar - Only show if not embedded inside AppHeader */}
+      {!hideTopBar && (
+        <TopBar
+          onOpenStudio={onOpenDashboard}
+          onOpenAudio={() => setIsAudioModalOpen(true)}
+          soundEnabled={audioSettings.soundEnabled}
+        />
+      )}
+
+      {/* Luminous Atmospheric Illumination behind the Globe */}
+      <div
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[720px] h-[720px] max-w-[96vw] max-h-[96vw] pointer-events-none z-0 rounded-full transition-colors duration-700"
+        style={{
+          background: `radial-gradient(circle at 50% 50%, ${palette.ambientBackdrop} 0%, rgba(10, 15, 30, 0.05) 45%, rgba(0, 0, 0, 0) 72%)`,
+          filter: 'blur(28px)',
+          opacity: globeSettings.atmosphericGlow * globeSettings.ambientBrightness,
+        }}
+      />
+
+      {/* Main 3D Dot-Matrix Earth Globe (Dominant Centered Visual Element) */}
+      {showGlobe && (
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[92vw] sm:w-[560px] md:w-[600px] lg:w-[640px] h-[92vw] sm:h-[560px] md:h-[600px] lg:h-[640px] max-w-[640px] max-h-[640px] pointer-events-auto z-10 flex items-center justify-center opacity-100">
+          <EarthGlobe isSearching={isSearching} reducedMotion={reducedMotion} />
         </div>
+      )}
 
-        {/* Right Nav: Switch to Full Studio Workspace */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setReducedMotion(!reducedMotion)}
-            title="Toggle lightweight 3D animation mode for older hardware"
-            className={`p-2 rounded-xl text-xs font-mono flex items-center gap-1.5 transition-all ${
-              reducedMotion
-                ? 'bg-amber-950/40 border border-amber-500/40 text-amber-300'
-                : 'bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-white/10'
-            }`}
+      {/* Subtle edge vignette to ensure complete seamless blending with deep black canvas */}
+      <div
+        className="absolute inset-0 pointer-events-none z-[15]"
+        style={{
+          background:
+            'radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.85) 100%)',
+        }}
+      />
+
+      {/* Centered Integrated Stack: Wordmark in Visual Center of Globe, Search Bar directly beneath */}
+      <main className="relative z-20 flex-1 flex flex-col items-center justify-center px-4 sm:px-6 pointer-events-none -translate-y-[2%] sm:-translate-y-[3%]">
+        {/* ANVESHA Brand Wordmark (Clean Centered Display) */}
+        <div className="text-center mb-5 sm:mb-6 pointer-events-auto flex items-center justify-center gap-2.5 sm:gap-3">
+          {/* Sparkle 4-point star icon */}
+          <svg
+            className="w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 text-[#38bdf8] drop-shadow-[0_0_12px_rgba(56,189,248,0.75)]"
+            viewBox="0 0 24 24"
+            fill="currentColor"
           >
-            <Sliders className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">
-              {reducedMotion ? 'Eco 3D: ON' : 'Eco 3D'}
-            </span>
-          </button>
-
-          <button
-            onClick={onOpenDashboard}
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-slate-200 hover:text-white transition-all shadow-sm"
+            <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" />
+          </svg>
+          <h1
+            className="text-3xl sm:text-4xl md:text-[46px] lg:text-[50px] font-semibold text-white tracking-wider leading-none select-none font-sans antialiased"
+            style={{
+              textShadow:
+                '0 0 24px rgba(180, 215, 255, 0.3), 0 2px 10px rgba(0, 0, 0, 0.85)',
+            }}
           >
-            <LayoutDashboard className="w-4 h-4 text-cyber-violet" />
-            <span>Studio Workspace</span>
-          </button>
-        </div>
-      </header>
-
-      {/* Center Hero Section */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4 -mt-6 sm:-mt-8 z-10 w-full max-w-4xl mx-auto text-center">
-        {/* Product Brand Title Above Sphere */}
-        <div className="space-y-1 mb-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/10 text-[11px] font-mono text-slate-400">
-            <Sparkles className="w-3.5 h-3.5 text-cyber-cyan" />
-            <span>Autonomous Code Intelligence</span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-white uppercase font-mono mt-3">
-            Codebase Intelligence
+            ANVESHA
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 font-mono tracking-tight max-w-lg mx-auto">
-            Minimalist semantic search & real-time AST exploration engine
-          </p>
         </div>
 
-        {/* 3D Animated Sphere Canvas */}
-        <div className="relative w-full max-w-[500px] flex items-center justify-center my-[-20px] sm:my-[-30px]">
-          <ThreeSphere isSearching={isSearching} reducedMotion={reducedMotion} />
-        </div>
-
-        {/* Minimalist Rounded Search Bar */}
-        <div className="w-full max-w-2xl px-2">
-          {/* Manual Routing Selector: [Auto | Codebase | Web] */}
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <button
-              type="button"
-              onClick={() => setSearchMode('auto')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono transition-all ${
-                searchMode === 'auto'
-                  ? 'bg-cyber-cyan/15 border border-cyber-cyan text-cyber-cyan font-semibold shadow-sm shadow-cyber-cyan/20'
-                  : 'bg-white/[0.03] hover:bg-white/[0.07] border border-white/5 text-slate-400 hover:text-slate-300'
-              }`}
-            >
-              <Zap className="w-3 h-3 text-cyber-cyan" />
-              <span>Auto</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSearchMode('code')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono transition-all ${
-                searchMode === 'code'
-                  ? 'bg-cyber-cyan/15 border border-cyber-cyan text-cyber-cyan font-semibold shadow-sm shadow-cyber-cyan/20'
-                  : 'bg-white/[0.03] hover:bg-white/[0.07] border border-white/5 text-slate-400 hover:text-slate-300'
-              }`}
-            >
-              <FolderCode className="w-3 h-3 text-cyber-cyan" />
-              <span>Codebase</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSearchMode('web')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono transition-all ${
-                searchMode === 'web'
-                  ? 'bg-cyber-violet/20 border border-cyber-violet text-cyber-violetGlow font-semibold shadow-sm shadow-cyber-violet/20'
-                  : 'bg-white/[0.03] hover:bg-white/[0.07] border border-white/5 text-slate-400 hover:text-slate-300'
-              }`}
-            >
-              <Globe className="w-3 h-3 text-cyber-violet" />
-              <span>Web Research</span>
-            </button>
-          </div>
-
-          <form onSubmit={handleFormSubmit} className="relative group">
-            <div className={`relative flex items-center w-full rounded-full transition-all duration-300 ${
-              isListening
-                ? 'bg-[#101726] ring-2 ring-cyber-cyan shadow-xl shadow-cyber-cyan/20 border-transparent'
-                : 'bg-[#111622]/90 hover:bg-[#141B2B] focus-within:bg-[#141B2B] border border-[#232B3E] focus-within:border-cyber-cyan focus-within:ring-1 focus-within:ring-cyber-cyan shadow-lg shadow-black/60'
-            }`}>
-              {/* Search Submit Button */}
-              <button
-                type="submit"
-                aria-label="Submit search"
-                className="pl-5 pr-2 flex items-center justify-center text-slate-400 hover:text-cyber-cyan focus:text-cyber-cyan group-focus-within:text-cyber-cyan transition-colors cursor-pointer"
-                title="Search codebase"
-              >
-                <Search className="w-5 h-5" />
-              </button>
-
-              {/* Text Input Field */}
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    if (query.trim()) {
-                      onSearch(query.trim(), searchMode);
-                    }
-                  }
-                }}
-                placeholder={
-                  isListening
-                    ? 'Listening... Speak your search query'
-                    : searchMode === 'code'
-                    ? 'Search functions, classes, symbols, or files...'
-                    : searchMode === 'web'
-                    ? 'Search documentation, guides, or public tech...'
-                    : 'Search codebase symbols or ask a technical question...'
-                }
-                className="w-full py-4 pr-3 text-sm font-mono text-white placeholder-slate-500 bg-transparent outline-none tracking-wide"
-                autoComplete="off"
-                autoFocus
-              />
-
-              {/* Right Controls: Clear & Microphone */}
-              <div className="pr-4 flex items-center gap-2">
-                {query && (
-                  <button
-                    type="button"
-                    onClick={handleClear}
-                    className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
-                    title="Clear search"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-
-                {/* English Voice Search Button */}
-                <button
-                  type="button"
-                  onClick={toggleVoiceSearch}
-                  className={`p-2.5 rounded-full transition-all relative ${
-                    isListening
-                      ? 'bg-rose-500 text-white animate-pulse shadow-md shadow-rose-500/50'
-                      : 'text-slate-400 hover:text-cyber-cyan hover:bg-white/5'
-                  }`}
-                  title={isListening ? 'Stop listening' : 'Search with English voice'}
-                >
-                  {isListening ? (
-                    <Mic className="w-4 h-4 text-white animate-bounce" />
-                  ) : (
-                    <Mic className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
-            </div>
-          </form>
-
-          {/* Voice Transcript / Error Feedback Bar */}
-          {isListening && (
-            <div className="mt-3 flex items-center justify-center gap-2 text-xs font-mono text-cyber-cyan animate-pulse">
-              <span className="w-2 h-2 rounded-full bg-cyber-cyan animate-ping" />
-              <span>{speechTranscript ? `"${speechTranscript}"` : 'Listening in English... Speak now'}</span>
-            </div>
-          )}
-
-          {voiceError && (
-            <div className="mt-3 flex items-center justify-center gap-2 text-xs font-mono text-rose-400 bg-rose-950/40 py-1.5 px-3 rounded-lg border border-rose-500/30">
-              <MicOff className="w-3.5 h-3.5" />
-              <span>{voiceError}</span>
-            </div>
-          )}
-
-          {/* Suggested Quick Queries */}
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs font-mono">
-            <span className="text-slate-500 text-[11px]">Popular terms:</span>
-            {suggestedQueries.map((term) => (
-              <button
-                key={term}
-                onClick={() => {
-                  setQuery(term);
-                  onSearch(term, searchMode);
-                }}
-                className="px-2.5 py-1 rounded-full bg-white/[0.03] hover:bg-white/[0.08] border border-white/5 hover:border-cyber-cyan/40 text-slate-400 hover:text-cyber-cyan transition-all text-[11px]"
-              >
-                {term}
-              </button>
-            ))}
-          </div>
+        {/* Integrated Centered Search Bar */}
+        <div className="pointer-events-auto w-full max-w-[640px] flex justify-center">
+          <SearchBar onSearch={onSearch} isSearching={isSearching} />
         </div>
       </main>
 
-      {/* Footer Info */}
-      <footer className="w-full px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] font-mono text-slate-500 border-t border-white/[0.05] z-20">
-        <div className="flex items-center gap-4">
-          <span className="flex items-center gap-1.5">
-            <Layers className="w-3.5 h-3.5 text-cyber-cyan" />
-            <span>Real Local AST Ingestion</span>
-          </span>
-          <span className="hidden sm:inline text-slate-700">&bull;</span>
-          <span className="hidden sm:flex items-center gap-1.5">
-            <FileCode2 className="w-3.5 h-3.5 text-cyber-violet" />
-            <span>Pure Black Workspace</span>
-          </span>
-        </div>
+      {/* Subtle Bottom Status Pill */}
+      <div className="relative z-30 pb-3 flex justify-center pointer-events-auto">
+        <button
+          onClick={toggleGlobe}
+          className="px-3 py-1 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/5 text-[11px] font-sans text-neutral-500 hover:text-neutral-300 transition-all flex items-center gap-1.5"
+          title="Toggle 3D Globe Centerpiece"
+        >
+          <span
+            className={`w-1.5 h-1.5 rounded-full ${
+              showGlobe ? 'bg-[#8ab4f8]' : 'bg-neutral-600'
+            }`}
+          />
+          <span>{showGlobe ? 'Globe Active' : 'Globe Muted'}</span>
+        </button>
+      </div>
 
-        <div className="text-slate-500 text-center sm:text-right">
-          {workspacePath ? (
-            <span className="truncate max-w-[320px] inline-block">
-              Root: {workspacePath.split('/').pop()}
-            </span>
-          ) : (
-            <span>Codebase Intelligence Engine &bull; Minimalist Search</span>
-          )}
-        </div>
-      </footer>
+      {/* Audio & Haptic Controls Modal */}
+      <AudioHapticControlsModal
+        isOpen={isAudioModalOpen}
+        onClose={() => setIsAudioModalOpen(false)}
+        settings={audioSettings}
+        onUpdateSettings={(partial) => audioService.updateSettings(partial)}
+      />
     </div>
   );
 };

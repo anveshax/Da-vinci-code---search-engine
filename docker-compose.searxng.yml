@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  searxng:
+    image: docker.io/searxng/searxng:latest
+    container_name: anvesha-searxng
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./searxng:/etc/searxng:rw
+    environment:
+      - SEARXNG_BASE_URL=http://localhost:8080/
+      - UWSGI_WORKERS=4
+      - UWSGI_THREADS=4
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

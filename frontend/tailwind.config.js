@@ -7,23 +7,38 @@ export default {
   theme: {
     extend: {
       colors: {
+        ice: {
+          DEFAULT: '#A0C4FF',
+          light: '#E2EDFF',
+          glow: '#C0D8FF',
+          dim: '#7094D4',
+          border: 'rgba(170, 195, 255, 0.55)',
+          borderFocus: 'rgba(190, 215, 255, 0.85)',
+        },
+        navy: {
+          950: '#020408',
+          900: '#050810',
+          850: '#070B16',
+          800: '#0A1128',
+          pill: 'rgba(5, 8, 16, 0.85)',
+        },
         obsidian: {
-          950: '#06090e',
-          900: '#0B0F17',
-          850: '#101622',
-          800: '#141c2b',
+          950: '#020408',
+          900: '#000000',
+          850: '#050810',
+          800: '#0A1128',
         },
         surface: {
-          card: '#111827',
-          hover: '#1F2937',
+          card: '#080808',
+          hover: '#141414',
           border: '#1F2937',
           borderLight: '#374151',
         },
         cyber: {
-          cyan: '#06B6D4',
-          cyanGlow: '#22D3EE',
-          violet: '#8B5CF6',
-          violetGlow: '#A78BFA',
+          cyan: '#A0C4FF',
+          cyanGlow: '#C0D8FF',
+          violet: '#7094D4',
+          violetGlow: '#A0C4FF',
           emerald: '#10B981',
           rose: '#F43F5E',
           amber: '#F59E0B',

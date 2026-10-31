@@ -1,0 +1,29 @@
+# ANVESHA SearXNG Configuration
+# Configured specifically for ANVESHA's independent JSON search adapter
+
+use_default_settings: true
+
+general:
+  debug: false
+  instance_name: "ANVESHA Search Gateway"
+
+search:
+  safe_search: 0
+  autocomplete: ""
+  default_lang: "en"
+  formats:
+    - html
+    - json
+
+server:
+  port: 8080
+  bind_address: "0.0.0.0"
+  secret_key: "anvesha_searxng_internal_secret_change_in_prod"
+  limiter: false
+  image_proxy: false
+
+ui:
+  static_use_hash: true
+  default_locale: "en"
+  theme_args:
+    simple_style: "dark"

@@ -1,0 +1,12 @@
+{
+  "name": "anvesha-sample-git-metrics",
+  "version": "1.0.0",
+  "description": "Calculates commit frequency, velocity index, and developer analytics for the Anvesha AI Platform",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "node test_manifest.js"
+  },
+  "dependencies": {
+    "@anvesha/extension-sdk": "^1.0.0"
+  }
+}

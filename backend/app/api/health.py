@@ -3,6 +3,7 @@ import platform
 import sys
 import time
 from datetime import datetime, timezone
+from typing import Dict, Any
 from fastapi import APIRouter
 from pydantic import BaseModel
 
@@ -52,3 +53,32 @@ def get_health() -> HealthResponse:
         timestamp=current_time,
         telemetry=telemetry,
     )
+
+
+@router.get("/integrations")
+async def get_integrations_health() -> Dict[str, Any]:
+    """
+    Returns live health, latency, and quota telemetry for all 6 external intelligence providers
+    (GitHub, OpenAlex, Jina AI, Firecrawl, Google Maps, Groq) with credentials securely masked.
+    """
+    from engine.integrations import provider_registry
+    return await provider_registry.check_all_providers()
+
+
+@router.get("/integrations/usage")
+def get_integrations_usage() -> Dict[str, Any]:
+    """Returns aggregated API call counts, unit consumption, and estimated costs in USD."""
+    from engine.integrations import cost_tracker
+    return cost_tracker.get_summary()
+
+
+@router.post("/integrations/{provider_id}/toggle")
+def toggle_provider(provider_id: str, enabled: bool) -> Dict[str, Any]:
+    """Dynamically enables or disables an external provider to prevent cost overruns."""
+    from engine.integrations import provider_registry
+    provider_registry.set_enabled(provider_id, enabled)
+    return {
+        "provider_id": provider_id,
+        "enabled": provider_registry.is_enabled(provider_id),
+        "status": "updated",
+    }

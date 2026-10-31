@@ -1,33 +1,67 @@
+@import './styles/design-tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  * {
-    border-color: #1F2937;
-  }
-  body {
-    background-color: #0B0F17;
-    color: #F3F4F6;
+  html, body, #root {
+    background-color: var(--bg-canvas, #050508);
+    color: var(--text-primary, #F3F4F6);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    transition: background-color 0.25s ease, color 0.25s ease;
   }
 }
 
-/* Custom Scrollbar for sleek developer look */
+html[data-theme="light"],
+html.light {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+html[data-theme="light"] ::-webkit-scrollbar-track,
+html.light ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+html[data-theme="light"] ::-webkit-scrollbar-thumb,
+html.light ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+
+html[data-theme="light"] ::-webkit-scrollbar-thumb:hover,
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Futuristic pill search glow */
+.search-pill-glow {
+  box-shadow: 0 0 24px rgba(150, 180, 255, 0.18);
+}
+.search-pill-glow:focus-within {
+  box-shadow: 0 0 32px rgba(170, 200, 255, 0.35);
+}
+
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0B0F17;
+  background: #000000;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1F2937;
+  background: #1a1a1a;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #374151;
+  background: #2a2a2a;
 }

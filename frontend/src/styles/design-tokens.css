@@ -1,0 +1,83 @@
+/**
+ * Codebase Intelligence Engine — Design System Tokens
+ * Premium, dark-first commercial design system.
+ */
+
+:root {
+  /* Surfaces */
+  --bg-canvas: #050508;
+  --bg-surface-lowest: #090a0f;
+  --bg-surface-low: #0e1017;
+  --bg-surface-mid: #141722;
+  --bg-surface-high: #1c202e;
+  --bg-surface-elevated: #24293b;
+  --bg-glass: rgba(14, 16, 23, 0.85);
+
+  /* Borders */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: #1f2536;
+  --border-strong: #2e374e;
+  --border-focus: #38bdf8;
+
+  /* Typography Colors */
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-tertiary: #64748b;
+  --text-muted: #475569;
+
+  /* Accents */
+  --accent-cyan: #38bdf8;
+  --accent-cyan-glow: rgba(56, 189, 248, 0.25);
+  --accent-violet: #818cf8;
+  --accent-violet-glow: rgba(129, 140, 248, 0.25);
+
+  /* Status Colors */
+  --status-success: #10b981;
+  --status-success-bg: rgba(16, 185, 129, 0.12);
+  --status-warning: #f59e0b;
+  --status-warning-bg: rgba(245, 158, 11, 0.12);
+  --status-danger: #ef4444;
+  --status-danger-bg: rgba(239, 68, 68, 0.12);
+  --status-info: #0ea5e9;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -4px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 24px var(--accent-cyan-glow);
+
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Light Mode Overrides (Optional Toggle) */
+[data-theme="light"] {
+  --bg-canvas: #f8fafc;
+  --bg-surface-lowest: #f1f5f9;
+  --bg-surface-low: #e2e8f0;
+  --bg-surface-mid: #cbd5e1;
+  --bg-surface-high: #ffffff;
+  --bg-surface-elevated: #ffffff;
+  --bg-glass: rgba(255, 255, 255, 0.9);
+
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --border-default: #cbd5e1;
+  --border-strong: #94a3b8;
+  --border-focus: #0284c7;
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #64748b;
+  --text-muted: #94a3b8;
+
+  --accent-cyan: #0284c7;
+  --accent-cyan-glow: rgba(2, 132, 199, 0.2);
+}

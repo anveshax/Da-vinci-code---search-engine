@@ -1,0 +1,16 @@
+{
+  "name": "anvesha-starter-extension",
+  "version": "1.0.0",
+  "description": "Boilerplate starter kit for building Anvesha platform extensions",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "node test.js"
+  },
+  "dependencies": {
+    "@anvesha/extension-sdk": "^1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
