@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.db import init_db
 from engine.crawler.scheduler import crawler_scheduler
+from engine.crawler.engine import web_intelligence_engine
 from app.api.health import router as health_router
 from app.api.search import router as search_router
 from app.api.search_v2 import router as search_v2_router
@@ -20,8 +21,9 @@ from app.api.crawler import router as crawler_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: initialize database schema and recover interrupted crawl tasks
+    # Startup: initialize database schema, ensure seed domains, and recover interrupted crawl tasks
     init_db()
+    web_intelligence_engine.ensure_seeded()
     await crawler_scheduler.startup_recovery()
     yield
     # Shutdown: gracefully cancel active crawler tasks

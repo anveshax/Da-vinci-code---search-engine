@@ -22,13 +22,22 @@ import uuid
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
-DB_DIR = Path(__file__).resolve().parents[2] / "data"
+_env_db_path = os.getenv("DATABASE_PATH")
+if _env_db_path and _env_db_path.strip():
+    DB_PATH = Path(_env_db_path.strip()).resolve()
+    DB_DIR = DB_PATH.parent
+else:
+    DB_DIR = Path(__file__).resolve().parents[2] / "data"
+    DB_PATH = DB_DIR / "intelligence.db"
+
 DB_DIR.mkdir(parents=True, exist_ok=True)
-DB_PATH = DB_DIR / "intelligence.db"
+
+_is_initializing = False
+_is_initialized = False
 
 
-def get_db_connection() -> sqlite3.Connection:
-    """Returns a SQLite connection with row dictionary access, WAL mode, and concurrency timeouts."""
+def _create_raw_connection() -> sqlite3.Connection:
+    """Creates a direct SQLite connection with row dictionary access, WAL mode, and concurrency timeouts."""
     conn = sqlite3.connect(str(DB_PATH), timeout=30.0)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
@@ -37,10 +46,23 @@ def get_db_connection() -> sqlite3.Connection:
     return conn
 
 
+def get_db_connection() -> sqlite3.Connection:
+    """Returns a SQLite connection, automatically ensuring schema initialization on first access."""
+    global _is_initializing, _is_initialized
+    if not _is_initialized and not _is_initializing:
+        init_db()
+    return _create_raw_connection()
+
+
 def init_db():
-    """Initializes schema and seeds default data."""
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
+    """Initializes schema and seeds default data idempotently."""
+    global _is_initializing, _is_initialized
+    if _is_initializing:
+        return
+    _is_initializing = True
+    try:
+        with _create_raw_connection() as conn:
+            cursor = conn.cursor()
 
         # Projects / Workspaces
         cursor.execute("""
@@ -776,6 +798,9 @@ def init_db():
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """, seed_memories)
             conn.commit()
+        _is_initialized = True
+    finally:
+        _is_initializing = False
 
 
 class PlatformDB:

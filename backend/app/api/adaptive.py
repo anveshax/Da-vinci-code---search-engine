@@ -13,7 +13,9 @@ router = APIRouter(prefix="/adaptive", tags=["Adaptive AI OS"])
 
 
 class ClassifyTaskRequest(BaseModel):
-    prompt: str = Field(..., description="The user prompt, query, or task goal")
+    prompt: Optional[str] = Field(None, description="The user prompt, query, or task goal")
+    task: Optional[str] = Field(None, description="Alternative field for user task")
+    query: Optional[str] = Field(None, description="Alternative field for user query")
     user_layout_preference: Optional[str] = Field(None, description="Manual layout override if requested")
     user_provider_preference: Optional[str] = Field(None, description="Manual provider override")
     user_model_preference: Optional[str] = Field(None, description="Manual model override")
@@ -35,11 +37,12 @@ def classify_task(req: ClassifyTaskRequest):
     - Recommended adaptive workspace layout
     - Human approval guardrail requirement & risk score
     """
-    if not req.prompt.strip():
+    effective_prompt = (req.prompt or req.task or req.query or "").strip()
+    if not effective_prompt:
         raise HTTPException(status_code=400, detail="Prompt cannot be empty.")
     
     return AdaptiveTaskClassifier.classify_task(
-        prompt=req.prompt,
+        prompt=effective_prompt,
         user_layout_preference=req.user_layout_preference,
         user_provider_preference=req.user_provider_preference,
         user_model_preference=req.user_model_preference

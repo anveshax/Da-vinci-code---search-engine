@@ -33,28 +33,35 @@ class WebIntelligenceEngine:
     def __init__(self):
         self.indexer = crawler_indexer
         self.scheduler = crawler_scheduler
-        self._seed_default_domains()
+        # Note: Do not run database queries in __init__ at module load time.
+        # Default seed domains are safely initialized via ensure_seeded() on first access / app lifespan.
+
+    def ensure_seeded(self):
+        """Ensures default approved technical documentation domains are seeded idempotently."""
+        now = time.time()
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                for seed in INITIAL_SEED_DOMAINS:
+                    d = seed["domain"]
+                    cursor.execute("SELECT id FROM crawler_seed_domains WHERE domain = ?", (d,))
+                    if not cursor.fetchone():
+                        dom_id = f"dom_{uuid.uuid4().hex[:10]}"
+                        cursor.execute("""
+                            INSERT INTO crawler_seed_domains (
+                                id, domain, enabled, allowed_paths, crawl_delay_sec,
+                                max_depth, max_pages, robots_txt_status, created_at, updated_at
+                            ) VALUES (?, ?, 1, ?, ?, ?, ?, 'ready', ?, ?)
+                        """, (
+                            dom_id, d, json.dumps(seed["allowed_paths"]),
+                            seed["delay"], seed["max_depth"], seed["max_pages"], now, now
+                        ))
+                conn.commit()
+        except Exception as e:
+            logger.warning(f"Seed domains initialization deferred or bypassed: {e}")
 
     def _seed_default_domains(self):
-        """Ensures default approved technical documentation domains are seeded."""
-        now = time.time()
-        with get_db_connection() as conn:
-            cursor = conn.cursor()
-            for seed in INITIAL_SEED_DOMAINS:
-                d = seed["domain"]
-                cursor.execute("SELECT id FROM crawler_seed_domains WHERE domain = ?", (d,))
-                if not cursor.fetchone():
-                    dom_id = f"dom_{uuid.uuid4().hex[:10]}"
-                    cursor.execute("""
-                        INSERT INTO crawler_seed_domains (
-                            id, domain, enabled, allowed_paths, crawl_delay_sec,
-                            max_depth, max_pages, robots_txt_status, created_at, updated_at
-                        ) VALUES (?, ?, 1, ?, ?, ?, ?, 'ready', ?, ?)
-                    """, (
-                        dom_id, d, json.dumps(seed["allowed_paths"]),
-                        seed["delay"], seed["max_depth"], seed["max_pages"], now, now
-                    ))
-            conn.commit()
+        self.ensure_seeded()
 
     def get_overview_stats(self) -> Dict[str, Any]:
         """Calculates global crawler and index metrics."""
@@ -106,6 +113,7 @@ class WebIntelligenceEngine:
         }
 
     def list_domains(self) -> List[Dict[str, Any]]:
+        self.ensure_seeded()
         with get_db_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM crawler_seed_domains ORDER BY created_at DESC")
