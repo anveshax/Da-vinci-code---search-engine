@@ -211,14 +211,15 @@ export const EarthGlobe: React.FC<EarthGlobeProps> = ({
         }
       } else {
         // Mobile & Tablet: responsive viewport-aware camera calculation
-        // Keeps sphere scaled comfortably (~50% width on phones, max 220px) without covering search bar
+        // Keeps sphere scaled comfortably (~60% width on phones, max 240px) without covering search bar
         const isPortrait = h > w;
         const targetPixelDiameter = isPortrait
-          ? Math.min(w * 0.52, Math.min(h * 0.30, 220))
-          : Math.min(h * 0.50, 240);
+          ? Math.min(w * 0.62, Math.min(h * 0.35, 240))
+          : Math.min(h * 0.52, 260);
         const halfFovRad = (fov / 2) * (Math.PI / 180);
         const zDist = (sphereRadius / Math.tan(halfFovRad)) * (h / Math.max(120, targetPixelDiameter));
-        camera.position.set(0, 0, Math.max(7.8, Math.min(32.0, zDist)));
+        const yOffset = isPortrait ? 0.32 : 0;
+        camera.position.set(0, yOffset, Math.max(7.8, Math.min(32.0, zDist)));
       }
       camera.aspect = w / h;
       camera.updateProjectionMatrix();

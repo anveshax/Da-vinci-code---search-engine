@@ -108,7 +108,7 @@ export const SearchHomepage: React.FC<SearchHomepageProps> = ({
       />
 
       {/* Centered Integrated Stack: Wordmark in Visual Center of Globe, Search Bar directly beneath */}
-      <main className="relative z-20 flex-1 flex flex-col items-center justify-center px-4 sm:px-6 pointer-events-none -translate-y-[2%] sm:-translate-y-[3%]">
+      <main className="relative z-20 flex-1 flex flex-col items-center justify-start pt-8 xs:pt-10 sm:pt-14 lg:justify-center lg:pt-0 px-4 sm:px-6 pointer-events-none">
         {/* ANVESHA Brand Wordmark (Clean Centered Display) */}
         <div className="text-center mb-3 sm:mb-6 pointer-events-auto flex items-center justify-center gap-2 sm:gap-3">
           {/* Sparkle 4-point star icon */}

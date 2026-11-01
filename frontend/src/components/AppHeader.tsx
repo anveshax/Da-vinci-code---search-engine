@@ -104,14 +104,14 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         </div>
 
         {/* Project / Workspace Dropdown */}
-        <div className="relative">
+        <div className="relative min-w-0">
           <button
             onClick={() => setProjectDropdownOpen(!projectDropdownOpen)}
-            className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-full bg-white/[0.05] border border-white/10 hover:border-white/20 text-xs font-sans text-[#e8eaed] transition-all min-h-[38px]"
+            className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-full bg-white/[0.05] border border-white/10 hover:border-white/20 text-xs font-sans text-[#e8eaed] transition-all min-h-[40px] max-w-full"
             title="Switch Workspace Project"
           >
             <FolderTree className="w-3.5 h-3.5 text-[#8ab4f8] shrink-0" />
-            <span className="font-medium truncate max-w-[85px] xs:max-w-[120px] sm:max-w-[180px]">
+            <span className="font-medium truncate max-w-[120px] xs:max-w-[160px] sm:max-w-[200px]">
               {activeProject?.name || 'Main Repository'}
             </span>
             <ChevronDown className="w-3 h-3 text-[#9aa0a6] shrink-0" />
@@ -288,16 +288,16 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 : 'bg-[#f28b82]'
             }`}
           />
-          <span className="capitalize hidden xs:inline">{connection.status}</span>
+          <span className="capitalize hidden sm:inline">{connection.status}</span>
           {connection.latencyMs !== null && (
-            <span className="text-[#9aa0a6] hidden sm:inline">({connection.latencyMs}ms)</span>
+            <span className="text-[#9aa0a6] hidden md:inline">({connection.latencyMs}ms)</span>
           )}
         </div>
 
-        {/* Extension Platform Drawer Trigger (Hidden on very narrow mobile <360px to prevent crowding) */}
+        {/* Extension Platform Drawer Trigger (Hidden on mobile <sm to prevent toolbar crowding) */}
         <button
           onClick={onToggleExtensionPanel}
-          className={`hidden xs:flex p-2 rounded-full transition-all touch-target ${
+          className={`hidden sm:flex p-2 rounded-full transition-all touch-target ${
             isExtensionPanelOpen
               ? 'bg-[#8ab4f8]/20 text-[#8ab4f8]'
               : 'text-[#9aa0a6] hover:text-[#e8eaed] hover:bg-white/10'
@@ -308,10 +308,10 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           <Blocks className="w-4 h-4" />
         </button>
 
-        {/* Spatial Audio Quick Trigger Button */}
+        {/* Spatial Audio Quick Trigger Button (Hidden on mobile <sm to prevent toolbar crowding) */}
         <button
           onClick={onOpenAudioModal}
-          className={`hidden xs:flex p-2 rounded-full transition-all touch-target ${
+          className={`hidden sm:flex p-2 rounded-full transition-all touch-target ${
             soundEnabled
               ? 'bg-[#8ab4f8]/20 text-[#8ab4f8]'
               : 'text-[#9aa0a6] hover:text-[#e8eaed] hover:bg-white/10'

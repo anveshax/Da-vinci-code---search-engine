@@ -162,6 +162,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     }
   };
 
+  const isMobileScreen = typeof window !== 'undefined' && window.innerWidth < 640;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) {
@@ -182,7 +184,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       <form onSubmit={handleSubmit} className="w-full relative group">
         {/* Luminous Translucent Pill Search Container */}
         <div
-          className={`relative flex items-center w-full h-[50px] sm:h-[52px] px-3.5 sm:px-5 rounded-full transition-all duration-300 select-none bg-[#0e1320]/75 backdrop-blur-xl border ${
+          className={`relative flex items-center w-full h-[52px] sm:h-[54px] px-3.5 sm:px-5 rounded-full transition-all duration-300 select-none bg-[#0e1320]/75 backdrop-blur-xl border ${
             isListening
               ? 'border-[#8ab4f8] ring-2 ring-[#8ab4f8]/35 shadow-[0_0_28px_rgba(138,180,248,0.3)]'
               : 'border-white/15 hover:border-[#8ab4f8]/45 focus-within:border-[#8ab4f8] shadow-[0_8px_32px_rgba(0,0,0,0.65),0_0_20px_rgba(138,180,248,0.08)] focus-within:shadow-[0_8px_36px_rgba(0,0,0,0.75),0_0_28px_rgba(138,180,248,0.2)]'
@@ -223,6 +225,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             placeholder={
               isListening
                 ? 'Listening... Speak your question'
+                : isMobileScreen
+                ? 'Search anything...'
                 : 'Search anything, code, research, web...'
             }
             className="flex-1 bg-transparent text-[#f8fafc] placeholder-[#8a93a6] text-[16px] font-normal outline-none tracking-normal font-sans min-w-0"
@@ -351,6 +355,38 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           </div>
         )}
       </form>
+
+      {/* Search Mode Selection Pills (Google-style immediate intent routing) */}
+      <div className="mt-3.5 sm:mt-4 w-full flex items-center justify-center gap-1.5 sm:gap-2 flex-wrap pointer-events-auto px-1">
+        {[
+          { id: 'auto' as SearchMode, label: 'Auto', icon: Zap, activeColor: 'text-[#8ab4f8]' },
+          { id: 'code' as SearchMode, label: 'Codebase', icon: FolderCode, activeColor: 'text-[#8ab4f8]' },
+          { id: 'web' as SearchMode, label: 'Web', icon: Globe, activeColor: 'text-[#8ab4f8]' },
+          { id: 'deep' as SearchMode, label: 'Deep Research', icon: Sparkles, activeColor: 'text-amber-400' },
+          { id: 'direct' as SearchMode, label: 'Direct AI', icon: Bot, activeColor: 'text-emerald-400' },
+        ].map((m) => {
+          const isSelected = searchMode === m.id;
+          const Icon = m.icon;
+          return (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => {
+                setSearchMode(m.id);
+                setIsFilterOpen(false);
+              }}
+              className={`px-3 py-1.5 min-h-[38px] rounded-full text-xs font-sans transition-all flex items-center gap-1.5 border touch-target ${
+                isSelected
+                  ? 'bg-[#8ab4f8]/20 border-[#8ab4f8]/50 text-white font-medium shadow-[0_0_12px_rgba(138,180,248,0.25)]'
+                  : 'bg-white/[0.04] border-white/10 text-[#9aa0a6] hover:text-[#e8eaed] hover:bg-white/[0.08]'
+              }`}
+            >
+              <Icon className={`w-3.5 h-3.5 ${isSelected ? m.activeColor : 'text-[#9aa0a6]'}`} />
+              <span className="whitespace-nowrap">{m.label}</span>
+            </button>
+          );
+        })}
+      </div>
 
       {/* Voice Transcript / Error Toast */}
       {isListening && (
