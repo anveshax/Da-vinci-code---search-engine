@@ -45,28 +45,28 @@ export const ModelCompareModal: React.FC<ModelCompareModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-5xl max-h-[90vh] bg-[#090C16] border border-[#1E2638] rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+        className="w-full max-w-5xl max-h-[92vh] sm:max-h-[90vh] bg-[#090C16] border border-[#1E2638] rounded-2xl shadow-2xl flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="h-14 border-b border-[#1E2638] px-6 flex items-center justify-between bg-[#0C1220]">
-          <div className="flex items-center gap-2.5">
+        <div className="h-14 border-b border-[#1E2638] px-4 sm:px-6 flex items-center justify-between bg-[#0C1220] shrink-0">
+          <div className="flex items-center gap-2 sm:gap-2.5">
             <Cpu className="w-4 h-4 text-sky-400" />
             <h3 className="text-sm font-bold text-white tracking-wide">
               Dual Model Comparison Studio
             </h3>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-white">
+          <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-white touch-target" aria-label="Close">
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Input & Model Selector */}
-        <div className="p-5 border-b border-white/5 space-y-3 bg-[#0B0F1A]">
+        <div className="p-3.5 sm:p-5 border-b border-white/5 space-y-3 bg-[#0B0F1A] shrink-0">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label className="text-[11px] font-mono text-slate-400 block mb-1">Model A:</label>
@@ -88,18 +88,18 @@ export const ModelCompareModal: React.FC<ModelCompareModalProps> = ({
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Ask a technical or architectural question to evaluate both models..."
-              className="flex-1 px-3.5 py-2 rounded-xl bg-[#070A12] border border-[#232B3E] text-xs font-mono text-white outline-none focus:border-sky-400"
+              className="flex-1 px-3.5 py-2 min-h-[40px] rounded-xl bg-[#070A12] border border-[#232B3E] text-xs font-mono text-white outline-none focus:border-sky-400"
             />
             <button
               onClick={handleCompare}
               disabled={isLoading || !query.trim()}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-black font-semibold text-xs font-mono transition-colors"
+              className="flex items-center justify-center gap-2 px-4 py-2 min-h-[40px] rounded-xl bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-black font-semibold text-xs font-mono transition-colors"
             >
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               <span>Compare</span>

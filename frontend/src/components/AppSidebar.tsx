@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Plus,
   Search,
@@ -195,22 +195,33 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
     { id: 'web_studio', label: 'Web Studio', icon: <Code2 className="w-4 h-4 text-emerald-400" /> },
   ];
 
+  // Body scroll locking when mobile drawer is open
+  useEffect(() => {
+    if (isMobileOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isMobileOpen]);
+
   const sidebarContent = (
     <aside
       className={`h-full bg-[#07090F] border-r border-[#1B2234] flex flex-col justify-between transition-all duration-300 z-40 select-none ${
-        isCollapsed ? 'w-16' : 'w-64'
+        isMobileOpen ? 'w-full' : isCollapsed ? 'w-16' : 'w-64'
       }`}
     >
       {/* Top Header / Brand */}
       <div className="p-3.5 border-b border-[#1A2030] flex items-center justify-between">
         <div
           onClick={handleStartNewSearch}
-          className="flex items-center gap-2.5 cursor-pointer overflow-hidden"
+          className="flex items-center gap-2.5 cursor-pointer overflow-hidden touch-target"
         >
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-400 to-indigo-600 flex items-center justify-center shrink-0 shadow-md shadow-cyan-500/20">
             <Sparkles className="w-4 h-4 text-white" />
           </div>
-          {!isCollapsed && (
+          {(!isCollapsed || isMobileOpen) && (
             <div className="truncate">
               <span className="text-xs font-bold tracking-wider text-white font-mono block truncate">
                 ANVESHA
@@ -231,12 +242,13 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
           {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </button>
 
-        {/* Mobile close button */}
+        {/* Mobile close button with min 44px hit-box */}
         <button
           onClick={onCloseMobile}
-          className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5"
+          className="md:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 touch-target"
+          aria-label="Close navigation"
         >
-          <X className="w-4 h-4" />
+          <X className="w-5 h-5" />
         </button>
       </div>
 
@@ -244,20 +256,20 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       <div className="p-3">
         <button
           onClick={handleStartNewSearch}
-          className={`w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-400/30 text-cyan-300 text-xs font-mono font-semibold transition-all ${
-            isCollapsed ? 'px-0' : ''
+          className={`w-full flex items-center justify-center gap-2 py-2.5 px-3 min-h-[44px] rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-400/30 text-cyan-300 text-xs font-mono font-semibold transition-all ${
+            isCollapsed && !isMobileOpen ? 'px-0' : ''
           }`}
           title="Start New Search (Ctrl+Shift+N)"
         >
           <Plus className="w-4 h-4 shrink-0" />
-          {!isCollapsed && <span>New AI Search</span>}
+          {(!isCollapsed || isMobileOpen) && <span>New AI Search</span>}
         </button>
       </div>
 
       {/* Main Navigation Items */}
-      <div className="flex-1 overflow-y-auto px-2 space-y-1 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto px-2 space-y-1.5 custom-scrollbar">
         <div className="px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-500">
-          {!isCollapsed && 'Navigation'}
+          {(!isCollapsed || isMobileOpen) && 'Navigation'}
         </div>
 
         {navItems.map((item) => {
@@ -269,30 +281,33 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                 onNavigate(item.id as ActiveView);
                 onCloseMobile();
               }}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 min-h-[44px] rounded-xl text-xs font-medium transition-all ${
                 isActive
                   ? 'bg-cyan-500/15 border border-cyan-400/30 text-white font-semibold shadow-sm'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
               }`}
-              title={isCollapsed ? item.label : undefined}
+              title={isCollapsed && !isMobileOpen ? item.label : undefined}
             >
               <div className="shrink-0">{item.icon}</div>
-              {!isCollapsed && <span className="truncate">{item.label}</span>}
+              {(!isCollapsed || isMobileOpen) && <span className="truncate">{item.label}</span>}
             </button>
           );
         })}
 
-        {/* Single Unified HISTORY Section (Expanded Mode Only) */}
-        {!isCollapsed && (
+        {/* Single Unified HISTORY Section (Expanded Mode or Mobile Drawer) */}
+        {(!isCollapsed || isMobileOpen) && (
           <div className="pt-3 space-y-2.5">
             <div className="px-2 flex items-center justify-between text-[10px] font-mono uppercase tracking-wider text-slate-500">
               <div
-                onClick={() => onNavigate('history')}
-                className="flex items-center gap-1.5 cursor-pointer hover:text-cyan-300 transition-colors"
+                onClick={() => {
+                  onNavigate('history');
+                  onCloseMobile();
+                }}
+                className="flex items-center gap-1.5 cursor-pointer hover:text-cyan-300 transition-colors py-1"
                 title="Open Google History view"
               >
-                <History className="w-3 h-3 text-cyan-400" />
-                <span>History</span>
+                <History className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="font-semibold">History</span>
               </div>
               <div className="flex items-center gap-1.5">
                 {uniqueConversations.length > 0 && (
@@ -667,11 +682,17 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       {/* Desktop Persistent Sidebar */}
       <div className="hidden md:block h-full shrink-0">{sidebarContent}</div>
 
-      {/* Mobile Drawer Overlay */}
+      {/* Mobile Drawer Overlay with Smooth Slide & Safe Area Support */}
       {isMobileOpen && (
-        <div className="fixed inset-0 z-50 md:hidden bg-black/80 backdrop-blur-sm animate-fade-in flex">
-          <div className="w-72 h-full">{sidebarContent}</div>
-          <div className="flex-1" onClick={onCloseMobile} />
+        <div className="fixed inset-0 z-50 md:hidden bg-black/80 backdrop-blur-sm flex">
+          <div className="w-[280px] xs:w-72 max-w-[85vw] h-full pt-safe pb-safe shadow-2xl flex flex-col bg-[#07090F] animate-in slide-in-from-left duration-300">
+            {sidebarContent}
+          </div>
+          <div
+            className="flex-1"
+            onClick={onCloseMobile}
+            aria-label="Close navigation overlay"
+          />
         </div>
       )}
     </>

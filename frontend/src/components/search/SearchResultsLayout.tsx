@@ -22,7 +22,7 @@ export const SearchResultsLayout: React.FC<SearchResultsLayoutProps> = ({
       </div>
 
       {/* 2. Centered Content Container (max-width ~1100px - 1140px) */}
-      <div className="w-full max-w-[1140px] mx-auto px-4 sm:px-6 py-6 pb-24 flex-1">
+      <div className="w-full max-w-[1140px] mx-auto px-3 sm:px-6 py-4 sm:py-6 pb-24 pb-safe flex-1">
         {secondaryColumn ? (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Primary Reading Column (~650-700px on desktop) */}

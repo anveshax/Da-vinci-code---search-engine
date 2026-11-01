@@ -9,6 +9,54 @@ export type GlobeColorPreset =
   | 'gold'
   | 'custom';
 
+export type GlobeStyle = 'realistic' | 'classic' | 'holographic' | 'cinematic' | 'v1' | 'v2' | 'v3' | 'v4';
+
+export interface GlobeVersionInfo {
+  id: 'classic' | 'realistic' | 'holographic' | 'cinematic';
+  code: 'V1' | 'V2' | 'V3' | 'V4';
+  name: string;
+  badge: string;
+  description: string;
+}
+
+export const GLOBE_VERSIONS: GlobeVersionInfo[] = [
+  {
+    id: 'classic',
+    code: 'V1',
+    name: 'Classic Minimal',
+    badge: 'Option 2 (V1)',
+    description: 'Original Three.js dot-matrix Earth with 3D sphere halo nodes, sharp continent points, and radial ground mist.',
+  },
+  {
+    id: 'realistic',
+    code: 'V2',
+    name: 'Realistic Immersive',
+    badge: 'Option 1 (V2 Default)',
+    description: 'High-fidelity dark Earth matching approved reference with starlight particle cloud, starburst flare satellite nodes, and glossy studio floor reflection.',
+  },
+  {
+    id: 'holographic',
+    code: 'V3',
+    name: 'Holographic Particle Earth',
+    badge: 'Option 3 (V3)',
+    description: 'Cinematic digital point-cloud Earth with intercontinental data connection arcs, luminous satellite cross-flares, three inclined orbital rings, and dark transparent depth.',
+  },
+  {
+    id: 'cinematic',
+    code: 'V4',
+    name: 'Cinematic Orbit Earth',
+    badge: 'Option 4 (V4)',
+    description: 'Americas-centered Earth with 6 luminous starburst satellite nodes, multi-angle orbital rings, and deep cosmos styling directly matching the reference visual.',
+  },
+];
+
+export function normalizeGlobeStyle(style?: GlobeStyle): 'classic' | 'realistic' | 'holographic' | 'cinematic' {
+  if (style === 'v1' || style === 'classic') return 'classic';
+  if (style === 'v3' || style === 'holographic') return 'holographic';
+  if (style === 'v4' || style === 'cinematic') return 'cinematic';
+  return 'realistic';
+}
+
 export interface GlobeColorPalette {
   primary: string;        // Continents / main city lights
   secondary: string;      // Subtle mid-tones
@@ -20,6 +68,7 @@ export interface GlobeColorPalette {
 }
 
 export interface GlobeSettings {
+  globeStyle: GlobeStyle;        // 'realistic' (default) | 'classic'
   lightIntensity: number;        // 0.2 to 2.0 (default 1.0)
   atmosphericGlow: number;       // 0.0 to 2.0 (default 1.0)
   ambientBrightness: number;     // 0.0 to 2.0 (default 0.85)
@@ -32,6 +81,7 @@ export interface GlobeSettings {
 const STORAGE_KEY = 'anvesha_globe_lighting_settings';
 
 export const DEFAULT_GLOBE_SETTINGS: GlobeSettings = {
+  globeStyle: 'realistic',
   lightIntensity: 1.0,
   atmosphericGlow: 1.0,
   ambientBrightness: 0.85,
@@ -147,6 +197,23 @@ class GlobeSettingsService {
           ...DEFAULT_GLOBE_SETTINGS,
           ...parsed,
         };
+      }
+      // Optional URL parameter override for direct testing / preview
+      if (window.location && window.location.search) {
+        const params = new URLSearchParams(window.location.search);
+        const style = params.get('globeStyle');
+        if (
+          style === 'classic' ||
+          style === 'realistic' ||
+          style === 'holographic' ||
+          style === 'cinematic' ||
+          style === 'v1' ||
+          style === 'v2' ||
+          style === 'v3' ||
+          style === 'v4'
+        ) {
+          this.settings.globeStyle = style as GlobeStyle;
+        }
       }
     } catch (err) {
       console.warn('Could not load globe settings from localStorage:', err);

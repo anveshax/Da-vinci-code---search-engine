@@ -364,23 +364,23 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4 bg-black/80 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-50 flex items-start justify-center pt-10 sm:pt-20 px-2 sm:px-4 bg-black/80 backdrop-blur-md animate-fade-in"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl bg-[#090C15] border border-[#1F273C] rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+        className="w-full max-w-2xl max-h-[85vh] bg-[#090C15] border border-[#1F273C] rounded-2xl shadow-2xl overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
         {/* Command Input Bar */}
-        <div className="flex items-center px-4 py-3.5 border-b border-[#1F273C] bg-[#0E1322]">
-          <Command className="w-5 h-5 text-sky-400 mr-3 shrink-0" />
+        <div className="flex items-center px-3 sm:px-4 py-3 sm:py-3.5 border-b border-[#1F273C] bg-[#0E1322] shrink-0">
+          <Command className="w-5 h-5 text-sky-400 mr-2.5 sm:mr-3 shrink-0" />
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Type a command, tool, or search mode (e.g. explorer, impact, deep)..."
+            placeholder="Type a command, tool, or search mode..."
             className="flex-1 bg-transparent text-sm text-white placeholder-slate-500 outline-none font-sans"
           />
           <kbd className="px-2 py-0.5 rounded bg-white/10 text-slate-400 text-[10px] font-mono border border-white/5">
@@ -389,7 +389,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         </div>
 
         {/* Action Results List */}
-        <div className="max-h-[380px] overflow-y-auto p-2 space-y-1">
+        <div className="max-h-[55vh] sm:max-h-[380px] overflow-y-auto p-2 space-y-1">
           {filteredActions.length === 0 ? (
             <div className="p-8 text-center text-xs font-mono text-slate-500">
               No actions matching "{query}"

@@ -220,16 +220,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-4xl h-[85vh] bg-[#090C16] border border-[#1E2638] rounded-2xl shadow-2xl flex flex-col md:flex-row overflow-hidden font-sans"
+        className="w-full max-w-4xl h-[92vh] sm:h-[85vh] bg-[#090C16] border border-[#1E2638] rounded-2xl shadow-2xl flex flex-col md:flex-row overflow-hidden font-sans"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Left Section Navigation (w-60) */}
-        <div className="w-full md:w-60 border-r border-[#1B2234] bg-[#07090F] flex flex-col shrink-0">
-          <div className="p-4 border-b border-[#1A2030] flex items-center justify-between">
+        {/* Left Section Navigation (w-60 on desktop; horizontal tab strip on mobile) */}
+        <div className="w-full md:w-60 border-b md:border-b-0 md:border-r border-[#1B2234] bg-[#07090F] flex flex-col shrink-0">
+          <div className="p-3 sm:p-4 border-b border-[#1A2030] flex items-center justify-between">
             <span className="text-xs font-bold font-mono text-white tracking-wider uppercase">
               Platform Settings
             </span>
@@ -241,12 +241,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             )}
           </div>
 
-          <div className="flex-1 overflow-y-auto p-2 space-y-0.5 scrollbar-thin">
+          <div className="flex md:flex-col overflow-x-auto md:overflow-y-auto p-2 gap-1 md:gap-0.5 no-scrollbar shrink-0">
             {sections.map((sec) => (
               <button
                 key={sec.id}
                 onClick={() => setActiveSection(sec.id)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs transition-colors ${
+                className={`flex items-center gap-2 px-3 py-2 min-h-[40px] rounded-xl text-left text-xs whitespace-nowrap shrink-0 transition-colors ${
                   activeSection === sec.id
                     ? 'bg-sky-500/15 text-sky-300 font-semibold border border-sky-500/30'
                     : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
@@ -258,7 +258,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             ))}
           </div>
 
-          <div className="p-3 border-t border-[#1A2030] bg-[#06080D]">
+          <div className="hidden md:block p-3 border-t border-[#1A2030] bg-[#06080D]">
             <span className="text-[10px] text-slate-400 font-mono block">
               Core Engine v2.0
             </span>
@@ -269,20 +269,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         {/* Right Section Content Pane */}
-        <div className="flex-1 flex flex-col bg-[#0A0D18] overflow-hidden">
-          <div className="p-4 border-b border-[#1A2030] flex items-center justify-between">
+        <div className="flex-1 flex flex-col bg-[#0A0D18] overflow-hidden min-h-0">
+          <div className="p-3 sm:p-4 border-b border-[#1A2030] flex items-center justify-between shrink-0">
             <h2 className="text-sm font-bold text-white capitalize font-mono">
               {sections.find((s) => s.id === activeSection)?.label}
             </h2>
             <button
               onClick={onClose}
-              className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors touch-target"
+              aria-label="Close settings"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6 space-y-6 text-xs text-slate-300">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 sm:space-y-6 text-xs text-slate-300">
             {/* 1. AI Providers & Models Dashboard */}
             {activeSection === 'ai_providers' && (
               <div className="space-y-6">
@@ -676,6 +677,134 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <RotateCcw className="w-3.5 h-3.5" />
                     <span>Reset to Default</span>
                   </button>
+                </div>
+
+                {/* Globe Model Style Toggle (Option 1: Realistic, Option 2: Classic, Option 3: Holographic) */}
+                <div className="p-4 rounded-xl bg-[#0F1422] border border-[#232B3E] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-white tracking-wide uppercase font-mono flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>Globe Rendering Style</span>
+                    </span>
+                    <span className="text-[11px] text-cyan-400 font-mono">
+                      Active:{' '}
+                      {globeSettings.globeStyle === 'classic' || globeSettings.globeStyle === 'v1'
+                        ? 'Classic Minimal'
+                        : globeSettings.globeStyle === 'holographic' || globeSettings.globeStyle === 'v3'
+                        ? 'Holographic Particle'
+                        : globeSettings.globeStyle === 'cinematic' || globeSettings.globeStyle === 'v4'
+                        ? 'Cinematic Orbit'
+                        : 'Realistic Immersive'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <button
+                      onClick={() => {
+                        globeSettingsService.updateSettings({ globeStyle: 'realistic' });
+                        setSavedNotice('Selected: Realistic Immersive Globe (V2)');
+                        setTimeout(() => setSavedNotice(null), 1500);
+                      }}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        globeSettings.globeStyle === 'realistic' ||
+                        globeSettings.globeStyle === 'v2' ||
+                        (!globeSettings.globeStyle && true)
+                          ? 'bg-cyan-500/15 border-cyan-500/50 text-white shadow-[0_0_12px_rgba(34,211,238,0.15)]'
+                          : 'bg-black/30 border-[#1E2638] text-slate-400 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-bold text-white">Realistic Immersive</span>
+                        {(globeSettings.globeStyle === 'realistic' ||
+                          globeSettings.globeStyle === 'v2' ||
+                          !globeSettings.globeStyle) && (
+                          <span className="text-[10px] bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-full font-mono">
+                            Option 1 (Default)
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-400 leading-relaxed">
+                        High-fidelity Earth matching approved reference with starlight particle cloud, starburst flare satellite nodes, and glossy studio floor reflection.
+                      </p>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        globeSettingsService.updateSettings({ globeStyle: 'classic' });
+                        setSavedNotice('Selected: Classic Minimal Globe (V1)');
+                        setTimeout(() => setSavedNotice(null), 1500);
+                      }}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        globeSettings.globeStyle === 'classic' || globeSettings.globeStyle === 'v1'
+                          ? 'bg-cyan-500/15 border-cyan-500/50 text-white shadow-[0_0_12px_rgba(34,211,238,0.15)]'
+                          : 'bg-black/30 border-[#1E2638] text-slate-400 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-bold text-white">Classic Minimal</span>
+                        {(globeSettings.globeStyle === 'classic' || globeSettings.globeStyle === 'v1') && (
+                          <span className="text-[10px] bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-full font-mono">
+                            Option 2 (Previous)
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-400 leading-relaxed">
+                        Original Three.js dot-matrix Earth with 3D sphere halo nodes, sharp continent points, and radial ground mist.
+                      </p>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        globeSettingsService.updateSettings({ globeStyle: 'holographic' });
+                        setSavedNotice('Selected: Holographic Particle Earth (V3)');
+                        setTimeout(() => setSavedNotice(null), 1500);
+                      }}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        globeSettings.globeStyle === 'holographic' || globeSettings.globeStyle === 'v3'
+                          ? 'bg-cyan-500/15 border-cyan-500/50 text-white shadow-[0_0_12px_rgba(34,211,238,0.15)]'
+                          : 'bg-black/30 border-[#1E2638] text-slate-400 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-bold text-white">Holographic Particle</span>
+                        {(globeSettings.globeStyle === 'holographic' ||
+                          globeSettings.globeStyle === 'v3') && (
+                          <span className="text-[10px] bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-full font-mono">
+                            Option 3 (V3)
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-400 leading-relaxed">
+                        Point-cloud Earth with intercontinental data connection arcs, luminous satellite cross-flares, three inclined orbital rings, and dark cinematic atmosphere.
+                      </p>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        globeSettingsService.updateSettings({ globeStyle: 'cinematic' });
+                        setSavedNotice('Selected: Cinematic Orbit Earth (V4)');
+                        setTimeout(() => setSavedNotice(null), 1500);
+                      }}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        globeSettings.globeStyle === 'cinematic' || globeSettings.globeStyle === 'v4'
+                          ? 'bg-cyan-500/15 border-cyan-500/50 text-white shadow-[0_0_12px_rgba(34,211,238,0.15)]'
+                          : 'bg-black/30 border-[#1E2638] text-slate-400 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-bold text-white">Cinematic Orbit</span>
+                        {(globeSettings.globeStyle === 'cinematic' ||
+                          globeSettings.globeStyle === 'v4') && (
+                          <span className="text-[10px] bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-full font-mono">
+                            Option 4 (V4)
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-400 leading-relaxed">
+                        Americas-centered Earth with 6 luminous starburst satellite nodes, multi-angle orbital rings, and deep cosmos styling directly matching the reference visual.
+                      </p>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Colour Presets */}

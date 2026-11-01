@@ -182,7 +182,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       <form onSubmit={handleSubmit} className="w-full relative group">
         {/* Luminous Translucent Pill Search Container */}
         <div
-          className={`relative flex items-center w-full h-[50px] sm:h-[52px] px-4 sm:px-5 rounded-full transition-all duration-300 select-none bg-[#0e1320]/75 backdrop-blur-xl border ${
+          className={`relative flex items-center w-full h-[48px] sm:h-[52px] px-3 sm:px-5 rounded-full transition-all duration-300 select-none bg-[#0e1320]/75 backdrop-blur-xl border ${
             isListening
               ? 'border-[#8ab4f8] ring-2 ring-[#8ab4f8]/35 shadow-[0_0_28px_rgba(138,180,248,0.3)]'
               : 'border-white/15 hover:border-[#8ab4f8]/45 focus-within:border-[#8ab4f8] shadow-[0_8px_32px_rgba(0,0,0,0.65),0_0_20px_rgba(138,180,248,0.08)] focus-within:shadow-[0_8px_36px_rgba(0,0,0,0.75),0_0_28px_rgba(138,180,248,0.2)]'
@@ -193,7 +193,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             type="submit"
             aria-label="Submit Search"
             disabled={isSearching}
-            className="flex items-center justify-center text-[#8ab4f8]/80 group-hover:text-[#8ab4f8] hover:text-white transition-colors cursor-pointer mr-3 disabled:opacity-50"
+            className="flex items-center justify-center text-[#8ab4f8]/80 group-hover:text-[#8ab4f8] hover:text-white transition-colors cursor-pointer mr-2 sm:mr-3 disabled:opacity-50 touch-target"
           >
             {isSearching ? (
               <Search className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse text-[#8ab4f8]" />
@@ -225,18 +225,18 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                 ? 'Listening... Speak your question'
                 : 'Search anything, code, research, web...'
             }
-            className="flex-1 bg-transparent text-[#f8fafc] placeholder-[#8a93a6] text-[15px] sm:text-[16px] font-normal outline-none tracking-normal font-sans"
+            className="flex-1 bg-transparent text-[#f8fafc] placeholder-[#8a93a6] text-[14px] sm:text-[16px] font-normal outline-none tracking-normal font-sans min-w-0"
             autoComplete="off"
             autoFocus
           />
 
           {/* Right Action Icons */}
-          <div className="flex items-center gap-1.5 ml-2">
+          <div className="flex items-center gap-1 sm:gap-1.5 ml-1 sm:ml-2 shrink-0">
             {query && (
               <button
                 type="button"
                 onClick={handleClear}
-                className="p-1.5 rounded-full text-[#8a93a6] hover:text-[#f8fafc] hover:bg-white/10 transition-colors"
+                className="p-1.5 rounded-full text-[#8a93a6] hover:text-[#f8fafc] hover:bg-white/10 transition-colors touch-target"
                 title="Clear input"
                 aria-label="Clear input"
               >
@@ -250,7 +250,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               onClick={toggleVoice}
               aria-label="Voice Search"
               title={isListening ? 'Stop listening' : 'Voice search in English'}
-              className={`p-2 rounded-full transition-all ${
+              className={`p-2 rounded-full transition-all touch-target ${
                 isListening
                   ? 'bg-[#ea4335] text-white animate-pulse shadow-md'
                   : 'text-[#8a93a6] hover:text-[#f8fafc] hover:bg-white/10'
@@ -269,7 +269,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               onClick={() => setIsFilterOpen(!isFilterOpen)}
               aria-label="Search Scope Filter"
               title="Filter search scope"
-              className={`p-2 rounded-full transition-colors ${
+              className={`p-2 rounded-full transition-colors touch-target ${
                 isFilterOpen || searchMode !== 'auto'
                   ? 'text-[#8ab4f8] bg-[#8ab4f8]/20'
                   : 'text-[#8a93a6] hover:text-[#f8fafc] hover:bg-white/10'
@@ -282,7 +282,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
         {/* Search Suggestions & Recent Searches Dropdown */}
         {isFocused && (suggestions.length > 0 || recentSearches.length > 0) && (
-          <div className="absolute top-[calc(100%+8px)] left-0 right-0 z-40 rounded-2xl bg-[#0c101a]/95 border border-white/10 backdrop-blur-2xl shadow-[0_16px_40px_rgba(0,0,0,0.8),0_0_24px_rgba(138,180,248,0.08)] p-2 text-xs font-sans space-y-1.5 animate-fade-in text-left">
+          <div className="absolute top-[calc(100%+8px)] left-0 right-0 z-40 rounded-2xl bg-[#0c101a]/95 border border-white/10 backdrop-blur-2xl shadow-[0_16px_40px_rgba(0,0,0,0.8),0_0_24px_rgba(138,180,248,0.08)] p-2 text-xs font-sans space-y-1.5 animate-fade-in text-left max-h-[60vh] overflow-y-auto">
             {suggestions.length > 0 && (
               <div>
                 <div className="px-3 py-1 text-[11px] uppercase text-[#8ab4f8] font-medium tracking-wider">
@@ -369,14 +369,14 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
       {/* Scope Selector Popover when Filter Icon is clicked */}
       {isFilterOpen && (
-        <div className="absolute top-[60px] right-0 z-30 w-72 bg-[#0c101a]/95 border border-white/10 backdrop-blur-2xl rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.8),0_0_24px_rgba(138,180,248,0.08)] p-2 animate-fade-in text-xs font-sans">
+        <div className="absolute top-[60px] right-0 z-30 w-72 max-w-[calc(100vw-2rem)] bg-[#0c101a]/95 border border-white/10 backdrop-blur-2xl rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.8),0_0_24px_rgba(138,180,248,0.08)] p-2 animate-fade-in text-xs font-sans">
           <div className="px-2.5 py-1.5 text-[11px] font-medium uppercase tracking-wider text-[#8a93a6] border-b border-white/10 mb-1">
             Search Mode
           </div>
           <button
             type="button"
             onClick={() => { setSearchMode('auto'); setIsFilterOpen(false); }}
-            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition-colors ${searchMode === 'auto' ? 'bg-[#8ab4f8]/15 text-[#8ab4f8] font-medium' : 'text-[#f1f5f9] hover:bg-white/5'}`}
+            className={`w-full flex items-center gap-2.5 px-3 py-2.5 min-h-[44px] rounded-xl text-left transition-colors ${searchMode === 'auto' ? 'bg-[#8ab4f8]/15 text-[#8ab4f8] font-medium' : 'text-[#f1f5f9] hover:bg-white/5'}`}
           >
             <Zap className="w-4 h-4 text-[#8ab4f8] shrink-0" />
             <div>
@@ -387,7 +387,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           <button
             type="button"
             onClick={() => { setSearchMode('code'); setIsFilterOpen(false); }}
-            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition-colors ${searchMode === 'code' ? 'bg-[#8ab4f8]/15 text-[#8ab4f8] font-medium' : 'text-[#f1f5f9] hover:bg-white/5'}`}
+            className={`w-full flex items-center gap-2.5 px-3 py-2.5 min-h-[44px] rounded-xl text-left transition-colors ${searchMode === 'code' ? 'bg-[#8ab4f8]/15 text-[#8ab4f8] font-medium' : 'text-[#f1f5f9] hover:bg-white/5'}`}
           >
             <FolderCode className="w-4 h-4 text-[#8ab4f8] shrink-0" />
             <div>
@@ -398,7 +398,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           <button
             type="button"
             onClick={() => { setSearchMode('web'); setIsFilterOpen(false); }}
-            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition-colors ${searchMode === 'web' ? 'bg-[#8ab4f8]/15 text-[#8ab4f8] font-medium' : 'text-[#f1f5f9] hover:bg-white/5'}`}
+            className={`w-full flex items-center gap-2.5 px-3 py-2.5 min-h-[44px] rounded-xl text-left transition-colors ${searchMode === 'web' ? 'bg-[#8ab4f8]/15 text-[#8ab4f8] font-medium' : 'text-[#f1f5f9] hover:bg-white/5'}`}
           >
             <Globe className="w-4 h-4 text-[#8ab4f8] shrink-0" />
             <div>
@@ -409,7 +409,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           <button
             type="button"
             onClick={() => { setSearchMode('deep'); setIsFilterOpen(false); }}
-            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition-colors ${searchMode === 'deep' ? 'bg-amber-400/15 text-amber-300 font-medium' : 'text-[#f1f5f9] hover:bg-white/5'}`}
+            className={`w-full flex items-center gap-2.5 px-3 py-2.5 min-h-[44px] rounded-xl text-left transition-colors ${searchMode === 'deep' ? 'bg-amber-400/15 text-amber-300 font-medium' : 'text-[#f1f5f9] hover:bg-white/5'}`}
           >
             <Sparkles className="w-4 h-4 text-amber-300 shrink-0" />
             <div>
@@ -420,7 +420,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           <button
             type="button"
             onClick={() => { setSearchMode('direct'); setIsFilterOpen(false); }}
-            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition-colors ${searchMode === 'direct' ? 'bg-emerald-400/15 text-emerald-300 font-medium' : 'text-[#f1f5f9] hover:bg-white/5'}`}
+            className={`w-full flex items-center gap-2.5 px-3 py-2.5 min-h-[44px] rounded-xl text-left transition-colors ${searchMode === 'direct' ? 'bg-emerald-400/15 text-emerald-300 font-medium' : 'text-[#f1f5f9] hover:bg-white/5'}`}
           >
             <Bot className="w-4 h-4 text-emerald-400 shrink-0" />
             <div>
@@ -432,7 +432,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       )}
 
       {/* Luminous Integrated Search Mode Selectors */}
-      <div className="mt-3.5 flex flex-wrap items-center justify-center gap-2 select-none">
+      <div className="mt-3 sm:mt-3.5 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 select-none px-1">
         <button
           type="button"
           onClick={() => setSearchMode('auto')}

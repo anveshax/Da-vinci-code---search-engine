@@ -47,8 +47,8 @@ export const SearchNavigationTabs: React.FC<SearchNavigationTabsProps> = ({
   ];
 
   return (
-    <div className="w-full bg-[#202124] border-b border-[#3c4043] px-4 sm:px-6 transition-colors">
-      <div className="max-w-[1240px] mx-auto flex items-center gap-1 sm:gap-2 overflow-x-auto scrollbar-none">
+    <div className="w-full bg-[#202124] border-b border-[#3c4043] px-2 sm:px-6 transition-colors">
+      <div className="max-w-[1240px] mx-auto flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar scroll-smooth">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
@@ -56,7 +56,7 @@ export const SearchNavigationTabs: React.FC<SearchNavigationTabsProps> = ({
               key={tab.id}
               type="button"
               onClick={() => onSelectTab(tab.id)}
-              className={`flex items-center gap-2 py-3 px-3 text-sm font-sans whitespace-nowrap transition-colors relative cursor-pointer ${
+              className={`flex items-center gap-1.5 sm:gap-2 py-2.5 sm:py-3 px-2.5 sm:px-3 text-xs sm:text-sm font-sans whitespace-nowrap transition-colors relative cursor-pointer min-h-[44px] ${
                 isActive
                   ? 'text-[#8ab4f8] font-medium'
                   : 'text-[#bdc1c6] hover:text-[#e8eaed]'

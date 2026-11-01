@@ -17,7 +17,7 @@ export const NavigationalResultCard: React.FC<NavigationalResultCardProps> = ({ 
   return (
     <div className="max-w-[652px] mb-6 p-4 sm:p-5 rounded-2xl bg-[#282a2c] border border-[#3c4043] shadow-md text-left transition-all">
       {/* Top Header: Favicon + Site Name + Verified Official Badge */}
-      <div className="flex items-center justify-between gap-3 mb-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 mb-2.5">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-8 h-8 rounded-full bg-[#303134] border border-[#3c4043] flex items-center justify-center overflow-hidden shrink-0">
             <img
@@ -38,7 +38,7 @@ export const NavigationalResultCard: React.FC<NavigationalResultCardProps> = ({ 
               </span>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#1e3a5f]/60 text-[#8ab4f8] border border-[#8ab4f8]/30 shrink-0">
                 <CheckCircle2 className="w-3 h-3 text-[#8ab4f8]" />
-                <span>Official Website</span>
+                <span>Official</span>
               </span>
             </div>
             <span className="text-xs text-[#9aa0a6] truncate font-mono">
@@ -52,7 +52,7 @@ export const NavigationalResultCard: React.FC<NavigationalResultCardProps> = ({ 
           href={result.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#8ab4f8] hover:bg-[#a8c7fa] text-[#202124] font-medium text-xs font-sans transition-colors cursor-pointer shadow-sm"
+          className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[38px] rounded-full bg-[#8ab4f8] hover:bg-[#a8c7fa] text-[#202124] font-medium text-xs font-sans transition-colors cursor-pointer shadow-sm touch-target"
         >
           <span>Visit website</span>
           <ExternalLink className="w-3.5 h-3.5" />

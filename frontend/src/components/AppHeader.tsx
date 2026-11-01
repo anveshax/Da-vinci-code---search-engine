@@ -77,34 +77,45 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   };
 
   return (
-    <header className="h-14 border-b border-white/10 bg-[#000000]/90 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between gap-3 shrink-0 z-30 select-none">
+    <header className="h-14 border-b border-white/10 bg-[#000000]/90 backdrop-blur-md px-2.5 sm:px-6 flex items-center justify-between gap-2 sm:gap-3 shrink-0 z-30 select-none pt-safe">
       {/* Left: Mobile hamburger & Workspace Selector */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         <button
           onClick={onOpenMobileMenu}
-          className="md:hidden p-1.5 rounded-lg text-[#9aa0a6] hover:text-[#e8eaed] hover:bg-white/10"
+          className="md:hidden p-2 rounded-xl text-[#9aa0a6] hover:text-[#e8eaed] hover:bg-white/10 touch-target transition-colors"
           title="Open Navigation"
+          aria-label="Open Navigation"
         >
           <Menu className="w-5 h-5" />
         </button>
+
+        {/* Mobile ANVESHA Brand Pill */}
+        <div className="flex items-center gap-1.5 md:hidden shrink-0">
+          <div className="w-6 h-6 rounded-md bg-gradient-to-br from-cyan-400 to-indigo-600 flex items-center justify-center shadow-sm">
+            <Sparkles className="w-3.5 h-3.5 text-white" />
+          </div>
+          <span className="font-bold text-xs tracking-wider text-white font-mono hidden xs:inline">
+            ANVESHA
+          </span>
+        </div>
 
         {/* Project / Workspace Dropdown */}
         <div className="relative">
           <button
             onClick={() => setProjectDropdownOpen(!projectDropdownOpen)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.05] border border-white/10 hover:border-white/20 text-xs font-sans text-[#e8eaed] transition-all"
+            className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-full bg-white/[0.05] border border-white/10 hover:border-white/20 text-xs font-sans text-[#e8eaed] transition-all min-h-[38px]"
             title="Switch Workspace Project"
           >
             <FolderTree className="w-3.5 h-3.5 text-[#8ab4f8] shrink-0" />
-            <span className="font-medium truncate max-w-[120px] sm:max-w-[180px]">
+            <span className="font-medium truncate max-w-[85px] xs:max-w-[120px] sm:max-w-[180px]">
               {activeProject?.name || 'Main Repository'}
             </span>
-            <ChevronDown className="w-3 h-3 text-[#9aa0a6]" />
+            <ChevronDown className="w-3 h-3 text-[#9aa0a6] shrink-0" />
           </button>
 
           {projectDropdownOpen && (
             <div
-              className="absolute left-0 top-10 z-50 w-64 bg-[#0c101a]/95 border border-white/10 backdrop-blur-2xl rounded-2xl shadow-2xl p-1.5 text-xs font-sans animate-fade-in"
+              className="absolute left-0 top-11 z-50 w-64 max-w-[calc(100vw-2rem)] bg-[#0c101a]/95 border border-white/10 backdrop-blur-2xl rounded-2xl shadow-2xl p-1.5 text-xs font-sans animate-fade-in"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="px-2.5 py-1 text-[11px] uppercase tracking-wider text-[#9aa0a6] border-b border-white/10 mb-1 font-medium">
@@ -226,11 +237,11 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       </div>
 
       {/* Right: Command Palette, Theme, Telemetry, Sound, Settings */}
-      <div className="flex items-center gap-2 sm:gap-2.5">
-        {/* Command Palette Trigger Button */}
+      <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+        {/* Command Palette Trigger Button (Desktop & Tablet) */}
         <button
           onClick={onOpenCommandPalette}
-          className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 rounded-full bg-white/[0.05] border border-white/10 hover:border-white/20 text-[#9aa0a6] hover:text-[#e8eaed] text-xs font-sans transition-all group shadow-sm"
+          className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 rounded-full bg-white/[0.05] border border-white/10 hover:border-white/20 text-[#9aa0a6] hover:text-[#e8eaed] text-xs font-sans transition-all group shadow-sm min-h-[38px]"
           title="Open Command Palette (Ctrl+K)"
         >
           <Command className="w-3.5 h-3.5 text-[#8ab4f8]" />
@@ -242,8 +253,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         {/* Theme Toggle Button (Light/Dark) */}
         <button
           onClick={onToggleTheme}
-          className="p-2 rounded-full hover:bg-white/10 text-[#9aa0a6] hover:text-[#e8eaed] transition-colors"
+          className="p-2 rounded-full hover:bg-white/10 text-[#9aa0a6] hover:text-[#e8eaed] transition-colors touch-target"
           title={`Switch to ${currentTheme === 'dark' ? 'Light' : 'Dark'} Theme`}
+          aria-label="Toggle color theme"
         >
           {currentTheme === 'dark' ? (
             <Sun className="w-4 h-4 text-[#fdd663]" />
@@ -252,9 +264,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           )}
         </button>
 
-        {/* Backend Telemetry Status Pill */}
+        {/* Backend Telemetry Status Pill (Compact on mobile) */}
         <div
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-sans border ${
+          className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-[11px] font-sans border min-h-[30px] ${
             connection.status === 'online'
               ? 'bg-[#137333]/20 border-[#137333]/40 text-[#81c995]'
               : connection.status === 'connecting'
@@ -264,7 +276,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           title={`Backend status: ${connection.status}${connection.latencyMs ? ` (${connection.latencyMs}ms)` : ''}`}
         >
           <span
-            className={`w-1.5 h-1.5 rounded-full ${
+            className={`w-1.5 h-1.5 rounded-full shrink-0 ${
               connection.status === 'online'
                 ? 'bg-[#81c995] animate-pulse'
                 : connection.status === 'connecting'
@@ -272,21 +284,22 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 : 'bg-[#f28b82]'
             }`}
           />
-          <span className="capitalize">{connection.status}</span>
+          <span className="capitalize hidden xs:inline">{connection.status}</span>
           {connection.latencyMs !== null && (
-            <span className="text-[#9aa0a6]">({connection.latencyMs}ms)</span>
+            <span className="text-[#9aa0a6] hidden sm:inline">({connection.latencyMs}ms)</span>
           )}
         </div>
 
-        {/* Extension Platform Drawer Trigger */}
+        {/* Extension Platform Drawer Trigger (Hidden on very narrow mobile <360px to prevent crowding) */}
         <button
           onClick={onToggleExtensionPanel}
-          className={`p-2 rounded-full transition-all ${
+          className={`hidden xs:flex p-2 rounded-full transition-all touch-target ${
             isExtensionPanelOpen
               ? 'bg-[#8ab4f8]/20 text-[#8ab4f8]'
               : 'text-[#9aa0a6] hover:text-[#e8eaed] hover:bg-white/10'
           }`}
           title="Toggle Extension Platform Drawer"
+          aria-label="Extensions"
         >
           <Blocks className="w-4 h-4" />
         </button>
@@ -294,12 +307,13 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         {/* Spatial Audio Quick Trigger Button */}
         <button
           onClick={onOpenAudioModal}
-          className={`p-2 rounded-full transition-all ${
+          className={`hidden xs:flex p-2 rounded-full transition-all touch-target ${
             soundEnabled
               ? 'bg-[#8ab4f8]/20 text-[#8ab4f8]'
               : 'text-[#9aa0a6] hover:text-[#e8eaed] hover:bg-white/10'
           }`}
           title={soundEnabled ? 'Spatial Audio Active (Click to configure)' : 'Spatial Audio Muted'}
+          aria-label="Audio controls"
         >
           {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
         </button>
@@ -307,8 +321,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         {/* Settings Button */}
         <button
           onClick={onOpenSettings}
-          className="p-2 rounded-full hover:bg-white/10 text-[#9aa0a6] hover:text-[#e8eaed] transition-colors"
+          className="p-2 rounded-full hover:bg-white/10 text-[#9aa0a6] hover:text-[#e8eaed] transition-colors touch-target"
           title="Platform Settings"
+          aria-label="Platform Settings"
         >
           <Settings className="w-4 h-4" />
         </button>

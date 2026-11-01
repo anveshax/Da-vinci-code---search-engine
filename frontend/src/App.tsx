@@ -581,7 +581,7 @@ export const App: React.FC = () => {
             currentView === 'impact' ||
             currentView === 'test_gaps' ||
             currentView === 'security') && (
-            <div className="flex-1 p-6 overflow-y-auto max-w-5xl mx-auto w-full">
+            <div className="flex-1 p-3.5 sm:p-6 pb-safe overflow-y-auto max-w-5xl mx-auto w-full">
               <CodebaseToolsPanel
                 onOpenFile={(path, line) => setInspectFilePath({ path, line: line || 1 })}
               />

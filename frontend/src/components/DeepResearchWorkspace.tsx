@@ -103,11 +103,11 @@ export const DeepResearchWorkspace: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#050508] overflow-y-auto p-4 sm:p-8 space-y-6 max-w-5xl mx-auto w-full">
+    <div className="flex-1 flex flex-col h-full bg-[#050508] overflow-y-auto p-3 sm:p-8 space-y-4 sm:space-y-6 max-w-5xl mx-auto w-full pb-safe">
       {/* Header Banner */}
-      <div className="p-6 rounded-2xl bg-gradient-to-r from-[#0C1222] via-[#0D1528] to-[#0A0E1A] border border-[#1F273C] shadow-xl space-y-3">
+      <div className="p-4 sm:p-6 rounded-2xl bg-gradient-to-r from-[#0C1222] via-[#0D1528] to-[#0A0E1A] border border-[#1F273C] shadow-xl space-y-3">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300">
+          <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 shrink-0">
             <Sparkles className="w-5 h-5" />
           </div>
           <div>
@@ -130,13 +130,13 @@ export const DeepResearchWorkspace: React.FC = () => {
             className="w-full p-3.5 rounded-xl bg-[#070A12] border border-[#232B3E] focus:border-amber-400/80 text-xs font-mono text-white placeholder-slate-500 outline-none resize-none"
           />
 
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             {/* Research depth options */}
-            <div className="flex items-center gap-2 text-xs font-mono">
-              <span className="text-slate-400">Research Depth:</span>
+            <div className="flex items-center gap-1.5 sm:gap-2 text-xs font-mono flex-wrap">
+              <span className="text-slate-400 text-[11px]">Depth:</span>
               <button
                 onClick={() => setDepth('standard')}
-                className={`px-3 py-1 rounded-lg transition-colors ${
+                className={`px-3 py-1.5 min-h-[36px] rounded-lg transition-colors ${
                   depth === 'standard'
                     ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold'
                     : 'text-slate-400 hover:text-white bg-white/5'
@@ -146,7 +146,7 @@ export const DeepResearchWorkspace: React.FC = () => {
               </button>
               <button
                 onClick={() => setDepth('exhaustive')}
-                className={`px-3 py-1 rounded-lg transition-colors ${
+                className={`px-3 py-1.5 min-h-[36px] rounded-lg transition-colors ${
                   depth === 'exhaustive'
                     ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold'
                     : 'text-slate-400 hover:text-white bg-white/5'
@@ -159,7 +159,7 @@ export const DeepResearchWorkspace: React.FC = () => {
             <button
               onClick={handleStartResearch}
               disabled={isRunning || !query.trim()}
-              className="flex items-center gap-2 px-5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 disabled:opacity-50 text-black font-semibold text-xs font-mono transition-all shadow-md shadow-amber-400/20"
+              className="flex items-center justify-center gap-2 px-5 py-2.5 min-h-[44px] rounded-xl bg-amber-400 hover:bg-amber-300 disabled:opacity-50 text-black font-semibold text-xs font-mono transition-all shadow-md shadow-amber-400/20"
             >
               {isRunning ? (
                 <>

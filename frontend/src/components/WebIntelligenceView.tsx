@@ -321,7 +321,7 @@ export const WebIntelligenceView: React.FC = () => {
       )}
 
       {/* Navigation Sub-Tabs */}
-      <div className="bg-[#060912] border-b border-[#1A2338] px-6 flex items-center gap-6 text-xs font-mono select-none overflow-x-auto scrollbar-none">
+      <div className="bg-[#060912] border-b border-[#1A2338] px-3 sm:px-6 flex items-center gap-4 sm:gap-6 text-xs font-mono select-none overflow-x-auto no-scrollbar">
         {[
           { id: 'overview', label: 'Overview', icon: <Layers className="w-3.5 h-3.5 text-cyan-400" /> },
           { id: 'domains', label: `Domain Allowlist (${domains.length})`, icon: <Globe className="w-3.5 h-3.5 text-blue-400" /> },
@@ -332,7 +332,7 @@ export const WebIntelligenceView: React.FC = () => {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`py-3 flex items-center gap-1.5 border-b-2 font-medium transition-colors shrink-0 ${
+            className={`py-3 min-h-[44px] flex items-center gap-1.5 border-b-2 font-medium transition-colors shrink-0 whitespace-nowrap ${
               activeTab === tab.id
                 ? 'border-cyan-400 text-white font-bold'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
@@ -345,7 +345,7 @@ export const WebIntelligenceView: React.FC = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6 pb-20">
+      <div className="flex-1 max-w-7xl w-full mx-auto p-3.5 sm:p-6 space-y-4 sm:space-y-6 pb-20 pb-safe">
         {/* TAB 1: OVERVIEW */}
         {activeTab === 'overview' && (
           <div className="space-y-6 animate-fade-in">

@@ -147,10 +147,10 @@ export const GovernanceConsole: React.FC<GovernanceConsoleProps> = ({ projectId 
 
           <div className="flex items-center gap-3">
             {/* View Switcher */}
-            <div className="flex items-center bg-zinc-900/90 p-1 rounded-xl border border-zinc-800 text-xs">
+            <div className="flex items-center bg-zinc-900/90 p-1 rounded-xl border border-zinc-800 text-xs overflow-x-auto no-scrollbar max-w-full">
               <button
                 onClick={() => setActiveTab('policies')}
-                className={`px-3 py-1.5 font-medium rounded-lg transition-all ${
+                className={`px-3 py-1.5 font-medium rounded-lg transition-all whitespace-nowrap shrink-0 min-h-[36px] ${
                   activeTab === 'policies' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-400 hover:text-white'
                 }`}
               >
@@ -158,7 +158,7 @@ export const GovernanceConsole: React.FC<GovernanceConsoleProps> = ({ projectId 
               </button>
               <button
                 onClick={() => setActiveTab('approvals')}
-                className={`px-3 py-1.5 font-medium rounded-lg transition-all ${
+                className={`px-3 py-1.5 font-medium rounded-lg transition-all whitespace-nowrap shrink-0 min-h-[36px] ${
                   activeTab === 'approvals' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-400 hover:text-white'
                 }`}
               >
@@ -166,7 +166,7 @@ export const GovernanceConsole: React.FC<GovernanceConsoleProps> = ({ projectId 
               </button>
               <button
                 onClick={() => setActiveTab('memory')}
-                className={`px-3 py-1.5 font-medium rounded-lg transition-all ${
+                className={`px-3 py-1.5 font-medium rounded-lg transition-all whitespace-nowrap shrink-0 min-h-[36px] ${
                   activeTab === 'memory' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-400 hover:text-white'
                 }`}
               >
@@ -174,7 +174,7 @@ export const GovernanceConsole: React.FC<GovernanceConsoleProps> = ({ projectId 
               </button>
               <button
                 onClick={() => setActiveTab('router')}
-                className={`px-3 py-1.5 font-medium rounded-lg transition-all flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 font-medium rounded-lg transition-all whitespace-nowrap shrink-0 min-h-[36px] flex items-center gap-1.5 ${
                   activeTab === 'router' ? 'bg-sky-500/20 text-sky-300 shadow-sm border border-sky-500/30' : 'text-zinc-400 hover:text-white'
                 }`}
               >
@@ -183,7 +183,7 @@ export const GovernanceConsole: React.FC<GovernanceConsoleProps> = ({ projectId 
               </button>
               <button
                 onClick={() => setActiveTab('optimization')}
-                className={`px-3 py-1.5 font-medium rounded-lg transition-all flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 font-medium rounded-lg transition-all whitespace-nowrap shrink-0 min-h-[36px] flex items-center gap-1.5 ${
                   activeTab === 'optimization' ? 'bg-emerald-500/20 text-emerald-300 shadow-sm border border-emerald-500/30' : 'text-zinc-400 hover:text-white'
                 }`}
               >
@@ -194,8 +194,9 @@ export const GovernanceConsole: React.FC<GovernanceConsoleProps> = ({ projectId 
 
             <button
               onClick={() => loadData()}
-              className="p-2 text-zinc-400 hover:text-white rounded-xl border border-zinc-800 hover:border-zinc-700 bg-zinc-900 transition-colors"
+              className="p-2 text-zinc-400 hover:text-white rounded-xl border border-zinc-800 hover:border-zinc-700 bg-zinc-900 transition-colors touch-target shrink-0"
               title="Refresh"
+              aria-label="Refresh data"
             >
               <RefreshCw className="w-4 h-4" />
             </button>
@@ -204,7 +205,7 @@ export const GovernanceConsole: React.FC<GovernanceConsoleProps> = ({ projectId 
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 p-6 max-w-7xl mx-auto w-full space-y-6">
+      <div className="flex-1 p-3.5 sm:p-6 max-w-7xl mx-auto w-full space-y-4 sm:space-y-6 pb-20 pb-safe">
         {/* Tab 1: Policies */}
         {activeTab === 'policies' && (
           <div className="space-y-4">

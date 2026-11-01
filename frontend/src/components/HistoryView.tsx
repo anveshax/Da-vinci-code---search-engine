@@ -168,15 +168,15 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#050508] text-slate-100 font-sans">
       {/* Top Banner / Google History inspired Header */}
-      <div className="px-8 py-6 border-b border-[#141B2D] bg-gradient-to-r from-[#070B14] via-[#091020] to-[#070B14] shrink-0">
-        <div className="max-w-5xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="px-4 sm:px-8 py-4 sm:py-6 border-b border-[#141B2D] bg-gradient-to-r from-[#070B14] via-[#091020] to-[#070B14] shrink-0">
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500 to-sky-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500 to-sky-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 shrink-0">
                 <History className="w-4 h-4 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                <h1 className="text-lg sm:text-xl font-bold tracking-tight text-white flex items-center gap-2 flex-wrap">
                   <span>ANVESHA Activity & History</span>
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-400/30 text-cyan-300 font-mono">
                     Google History
@@ -190,10 +190,10 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
             <button
               onClick={onNewSearch}
-              className="px-3.5 py-1.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-400/40 text-cyan-300 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm"
+              className="px-3.5 py-2 min-h-[40px] rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-400/40 text-cyan-300 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm touch-target"
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>New Search</span>
@@ -202,7 +202,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
             {uniqueConversations.length > 0 && onClearAllHistory && (
               <button
                 onClick={() => setIsClearAllModalOpen(true)}
-                className="px-3.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs font-semibold flex items-center gap-1.5 transition-all"
+                className="px-3.5 py-2 min-h-[40px] rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs font-semibold flex items-center gap-1.5 transition-all touch-target"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Clear All History</span>
@@ -213,10 +213,10 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto px-6 py-6 custom-scrollbar">
-        <div className="max-w-5xl mx-auto space-y-6">
+      <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-4 sm:py-6 pb-safe custom-scrollbar">
+        <div className="max-w-5xl mx-auto space-y-4 sm:space-y-6">
           {/* Controls: Search Bar & Filter Chips */}
-          <div className="bg-[#0A0E1A] border border-[#162036] rounded-2xl p-4 shadow-xl space-y-3">
+          <div className="bg-[#0A0E1A] border border-[#162036] rounded-2xl p-3.5 sm:p-4 shadow-xl space-y-3">
             <div className="relative">
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
@@ -237,8 +237,8 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
             </div>
 
             {/* Filter Chips */}
-            <div className="flex items-center gap-2 overflow-x-auto pt-1 text-xs">
-              <span className="text-slate-400 text-[11px] font-mono mr-1">Filter:</span>
+            <div className="flex items-center gap-2 overflow-x-auto pt-1 text-xs no-scrollbar">
+              <span className="text-slate-400 text-[11px] font-mono mr-1 shrink-0">Filter:</span>
 
               {[
                 { id: 'all', label: `All Activity (${uniqueConversations.length})` },
@@ -252,7 +252,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
                   <button
                     key={chip.id}
                     onClick={() => setModeFilter(chip.id as any)}
-                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap shrink-0 transition-all ${
                       isActive
                         ? 'bg-cyan-500/20 border border-cyan-400/50 text-cyan-200 shadow-sm'
                         : 'bg-[#12192E] border border-transparent text-slate-400 hover:text-slate-200 hover:bg-[#18223C]'

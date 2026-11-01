@@ -67,12 +67,12 @@ export const AIOverview: React.FC<AIOverviewProps> = ({
   return (
     <section
       aria-label="AI Overview"
-      className="rounded-2xl bg-[#282a2c] border border-[#3c4043] p-5 sm:p-6 mb-6 transition-colors shadow-sm"
+      className="rounded-2xl bg-[#282a2c] border border-[#3c4043] p-4 sm:p-6 mb-4 sm:mb-6 transition-colors shadow-sm"
     >
       {/* AI Overview Header */}
-      <div className="flex items-center justify-between pb-3.5 border-b border-[#3c4043]">
-        <div className="flex items-center gap-2.5">
-          <div className="w-6 h-6 rounded-md bg-[#303134] flex items-center justify-center text-[#8ab4f8]">
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-3.5 border-b border-[#3c4043]">
+        <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
+          <div className="w-6 h-6 rounded-md bg-[#303134] flex items-center justify-center text-[#8ab4f8] shrink-0">
             <Sparkles className="w-4 h-4" />
           </div>
           <h2 className="text-sm sm:text-base font-sans font-medium text-[#e8eaed] tracking-normal">
@@ -92,7 +92,7 @@ export const AIOverview: React.FC<AIOverviewProps> = ({
         </div>
 
         {/* Header Action Buttons */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1 sm:gap-1.5">
           {/* Read Aloud Button */}
           {answer && !isStreaming && (
             <button

@@ -30,6 +30,7 @@ export const CodebaseExplorerView: React.FC = () => {
   const [isLoadingContent, setIsLoadingContent] = useState(false);
   const [isLoadingTree, setIsLoadingTree] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [mobileTab, setMobileTab] = useState<'tree' | 'preview'>('tree');
   const [openDirs, setOpenDirs] = useState<Record<string, boolean>>({
     backend: true,
     frontend: true,
@@ -62,6 +63,7 @@ export const CodebaseExplorerView: React.FC = () => {
 
   const handleSelectFile = async (path: string) => {
     setSelectedFile(path);
+    setMobileTab('preview');
     setIsLoadingContent(true);
     try {
       const res = await getFileContent(path);
@@ -181,8 +183,10 @@ export const CodebaseExplorerView: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col md:flex-row h-full overflow-hidden bg-[#050508]">
-      {/* Left Tree Explorer (w-72) */}
-      <div className="w-full md:w-72 border-r border-[#1B2234] bg-[#07090F] flex flex-col shrink-0">
+      {/* Left Tree Explorer (w-72 on desktop; conditional full-width on mobile) */}
+      <div className={`w-full md:w-72 border-r border-[#1B2234] bg-[#07090F] flex-col shrink-0 ${
+        mobileTab === 'tree' ? 'flex h-full' : 'hidden md:flex'
+      }`}>
         <div className="p-3 border-b border-[#1A2030] space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold font-mono text-white flex items-center gap-1.5">
@@ -192,7 +196,7 @@ export const CodebaseExplorerView: React.FC = () => {
             <button
               onClick={loadTree}
               disabled={isLoadingTree}
-              className="p-1 rounded text-slate-400 hover:text-white"
+              className="p-1 rounded text-slate-400 hover:text-white touch-target"
               title="Refresh Tree"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isLoadingTree ? 'animate-spin' : ''}`} />
@@ -217,16 +221,24 @@ export const CodebaseExplorerView: React.FC = () => {
       </div>
 
       {/* Right File Preview Panel */}
-      <div className="flex-1 flex flex-col h-full bg-[#090C16] overflow-hidden">
+      <div className={`flex-1 flex-col h-full bg-[#090C16] overflow-hidden ${
+        mobileTab === 'preview' ? 'flex' : 'hidden md:flex'
+      }`}>
         {selectedFile && (
-          <div className="h-12 border-b border-[#1A2030] px-4 flex items-center justify-between bg-[#0C101E] shrink-0">
-            <div className="flex items-center gap-2 truncate mr-3">
-              <FileCode className="w-4 h-4 text-sky-400 shrink-0" />
+          <div className="h-12 border-b border-[#1A2030] px-3 sm:px-4 flex items-center justify-between bg-[#0C101E] shrink-0">
+            <div className="flex items-center gap-2 truncate mr-2">
+              <button
+                onClick={() => setMobileTab('tree')}
+                className="md:hidden px-2 py-1 rounded bg-white/5 hover:bg-white/10 text-[11px] font-mono text-sky-400 shrink-0"
+              >
+                &larr; Files
+              </button>
+              <FileCode className="w-4 h-4 text-sky-400 shrink-0 hidden xs:inline" />
               <span className="text-xs font-mono font-bold text-white truncate">
                 {selectedFile}
               </span>
               {fileContent && (
-                <span className="text-[10px] font-mono text-slate-500 shrink-0">
+                <span className="text-[10px] font-mono text-slate-500 shrink-0 hidden sm:inline">
                   ({fileContent.total_lines} lines &bull; {(fileContent.size_bytes / 1024).toFixed(1)} KB)
                 </span>
               )}
@@ -235,7 +247,7 @@ export const CodebaseExplorerView: React.FC = () => {
             <button
               onClick={handleCopy}
               disabled={!fileContent}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-mono text-slate-300 hover:text-white transition-colors"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-mono text-slate-300 hover:text-white transition-colors shrink-0"
             >
               {copied ? (
                 <>

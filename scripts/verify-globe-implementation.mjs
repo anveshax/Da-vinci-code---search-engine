@@ -42,16 +42,17 @@ verify(
 
 verify(
   "Detailed spherical core geometry prevents backface clutter and gives depth",
-  earthGlobeContent.includes('new THREE.SphereGeometry(sphereRadius * 0.985') &&
-  earthGlobeContent.includes('0x020408'),
+  earthGlobeContent.includes('new THREE.SphereGeometry(sphereRadius * 0.988') &&
+  earthGlobeContent.includes('0x020409'),
   "Core dark sphere geometry missing or misconfigured"
 );
 
 verify(
-  "Illuminated continents use high-res land points with additive blending",
+  "Illuminated continents use high-res land points and soft-circular particle texture",
   earthGlobeContent.includes('/data/land-points.json') &&
+  earthGlobeContent.includes('createCircleParticleTexture') &&
   earthGlobeContent.includes('new THREE.PointsMaterial'),
-  "Land points or points material missing"
+  "Land points or circular particle sprite texture missing"
 );
 
 verify(
@@ -63,22 +64,23 @@ verify(
 );
 
 verify(
-  "Glowing orbital bloom nodes with soft halo meshes travel along orbits",
+  "Glowing orbital bloom nodes with starburst flare sprites travel along orbits",
+  earthGlobeContent.includes('createFlareTexture') &&
   earthGlobeContent.includes('bloomNodes') &&
-  earthGlobeContent.includes('haloMesh'),
-  "Glowing orbital nodes missing"
+  earthGlobeContent.includes('flareSprite'),
+  "Glowing orbital nodes or flare texture missing"
 );
 
 verify(
   "Realistic atmospheric rim lighting using Fresnel shader with directional bias",
-  earthGlobeContent.includes('fresnel = pow(fresnel, power) * bias') &&
-  earthGlobeContent.includes('upperLeftRim'),
+  earthGlobeContent.includes('fresnel = pow(1.0 - vDotN, power) * bias') &&
+  earthGlobeContent.includes('upperRim'),
   "Fresnel atmospheric rim shader missing or incorrect"
 );
 
 verify(
-  "Subtle ground reflection beneath globe fading to black",
-  earthGlobeContent.includes('reflectionCanvas') &&
+  "Subtle glossy floor reflection beneath globe matching reference image",
+  earthGlobeContent.includes('createFloorReflectionTexture') &&
   earthGlobeContent.includes('reflectionPlane') &&
   earthGlobeContent.includes('reflectionGeo'),
   "Floor reflection plane missing"
@@ -86,9 +88,9 @@ verify(
 
 // 2. Integration into Page (Not a sticker or isolated card)
 verify(
-  "Globe container matches exact required responsive dimensions without card border",
-  searchHomepageContent.includes('w-[92vw] sm:w-[560px] md:w-[600px] lg:w-[640px] h-[92vw] sm:h-[560px] md:h-[600px] lg:h-[640px] max-w-[640px] max-h-[640px]'),
-  "Globe container dimensions do not match previous specifications"
+  "Globe canvas integrates into page with full-bleed container preventing orbit clipping",
+  searchHomepageContent.includes('absolute inset-0 w-full h-full pointer-events-auto z-10'),
+  "Globe container missing full-bleed integration"
 );
 
 verify(
@@ -110,6 +112,16 @@ verify(
   settingsModalContent.includes("id: 'globe_appearance'") &&
   settingsModalContent.includes("Globe Appearance & Lighting"),
   "Globe Appearance missing from settings navigation"
+);
+
+verify(
+  "Globe Style switcher offers Option 1 (Realistic Immersive) and Option 2 (Classic Minimal)",
+  settingsModalContent.includes("Globe Rendering Style") &&
+  settingsModalContent.includes("Realistic Immersive") &&
+  settingsModalContent.includes("Classic Minimal") &&
+  earthGlobeContent.includes("createClassicReflectionTexture") &&
+  globeSettingsServiceContent.includes("globeStyle: GlobeStyle"),
+  "Globe style switcher missing or misconfigured"
 );
 
 verify(
@@ -185,12 +197,12 @@ verify(
   "Real-time Three.js settings subscription missing"
 );
 
-// 4. Performance & Memory Management
 verify(
   "All geometries, materials, and canvas textures are safely disposed on unmount",
   earthGlobeContent.includes('coreGeo.dispose()') &&
   earthGlobeContent.includes('rimGeo.dispose()') &&
-  earthGlobeContent.includes('dustGeo.dispose()') &&
+  earthGlobeContent.includes('circleTexture.dispose()') &&
+  earthGlobeContent.includes('flareTexture.dispose()') &&
   earthGlobeContent.includes('reflectionTexture.dispose()') &&
   earthGlobeContent.includes('renderer.dispose()'),
   "Resource disposal or memory leak prevention missing"

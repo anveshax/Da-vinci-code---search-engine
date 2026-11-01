@@ -275,7 +275,7 @@ export const MultiAgentWorkspace: React.FC<MultiAgentWorkspaceProps> = ({
       </div>
 
       {/* Main Workspace Body */}
-      <div className="flex-1 p-6 flex flex-col gap-6 max-w-7xl mx-auto w-full">
+      <div className="flex-1 p-3.5 sm:p-6 flex flex-col gap-4 sm:gap-6 max-w-7xl mx-auto w-full pb-20 pb-safe">
         {/* Agent Dashboard Ribbon */}
         <div>
           <div className="flex items-center justify-between mb-3">

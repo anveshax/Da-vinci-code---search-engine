@@ -92,16 +92,16 @@ export const PromptLibraryModal: React.FC<PromptLibraryModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-3xl max-h-[85vh] bg-[#090C16] border border-[#1E2638] rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+        className="w-full max-w-3xl max-h-[90vh] sm:max-h-[85vh] bg-[#090C16] border border-[#1E2638] rounded-2xl shadow-2xl flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="h-14 border-b border-[#1E2638] px-6 flex items-center justify-between bg-[#0C1220]">
-          <div className="flex items-center gap-2.5">
+        <div className="h-14 border-b border-[#1E2638] px-3.5 sm:px-6 flex items-center justify-between bg-[#0C1220] shrink-0">
+          <div className="flex items-center gap-2 sm:gap-2.5">
             <Briefcase className="w-4 h-4 text-amber-400" />
             <h3 className="text-sm font-bold text-white tracking-wide">
               Engineering Prompt Library
@@ -111,19 +111,19 @@ export const PromptLibraryModal: React.FC<PromptLibraryModalProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsCreating(!isCreating)}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-mono transition-colors"
+              className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-mono transition-colors min-h-[36px]"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>{isCreating ? 'Cancel' : 'New Template'}</span>
             </button>
-            <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-white">
+            <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-white touch-target" aria-label="Close">
               <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
         {/* Filter bar */}
-        <div className="p-4 border-b border-white/5 space-y-3 bg-[#0B0F1A]">
+        <div className="p-3 sm:p-4 border-b border-white/5 space-y-2.5 sm:space-y-3 bg-[#0B0F1A] shrink-0">
           <div className="relative">
             <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
             <input
@@ -135,7 +135,7 @@ export const PromptLibraryModal: React.FC<PromptLibraryModalProps> = ({
             />
           </div>
 
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
             {categories.map((cat) => (
               <button
                 key={cat}

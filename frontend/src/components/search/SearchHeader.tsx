@@ -80,14 +80,14 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-[#202124] border-b border-[#3c4043] px-4 sm:px-6 py-2.5 sm:py-3 transition-colors">
-      <div className="max-w-[1240px] mx-auto flex items-center justify-between gap-3 sm:gap-6">
+    <header className="sticky top-0 z-40 w-full bg-[#202124] border-b border-[#3c4043] px-2.5 sm:px-6 py-2 sm:py-3 transition-colors pt-safe">
+      <div className="max-w-[1240px] mx-auto flex items-center justify-between gap-2 sm:gap-6">
         {/* Left: Brand Logo & Wordmark */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           <button
             type="button"
             onClick={onBackToSearch}
-            className="p-1.5 rounded-full hover:bg-[#303134] text-[#bdc1c6] hover:text-[#e8eaed] transition-colors"
+            className="p-2 rounded-full hover:bg-[#303134] text-[#bdc1c6] hover:text-[#e8eaed] transition-colors touch-target"
             title="Return to search home"
             aria-label="Back to search"
           >
@@ -97,26 +97,26 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
           <button
             type="button"
             onClick={onBackToSearch}
-            className="flex items-center gap-2 group text-left cursor-pointer"
+            className="flex items-center gap-2 group text-left cursor-pointer touch-target"
             aria-label="ANVESHA Home"
           >
             <div className="w-7 h-7 rounded-lg bg-[#303134] border border-[#3c4043] flex items-center justify-center text-[#8ab4f8] group-hover:border-[#8ab4f8] transition-colors">
               <Sparkles className="w-4 h-4" />
             </div>
-            <span className="font-sans font-semibold tracking-wide text-base sm:text-lg text-[#e8eaed]">
+            <span className="hidden sm:inline font-sans font-semibold tracking-wide text-base sm:text-lg text-[#e8eaed]">
               ANVESHA
             </span>
           </button>
         </div>
 
         {/* Center: Google-Style Search Bar */}
-        <div className="flex-1 max-w-[692px] relative">
+        <div className="flex-1 max-w-[692px] relative min-w-0">
           <form onSubmit={handleSubmit} className="relative flex items-center w-full">
-            <div className="relative flex-1 flex items-center bg-[#303134] hover:bg-[#303134] focus-within:bg-[#303134] border border-[#3c4043] hover:border-[#5f6368] focus-within:border-[#8ab4f8] rounded-full shadow-sm hover:shadow-md focus-within:shadow-md transition-all">
+            <div className="relative flex-1 flex items-center bg-[#303134] hover:bg-[#303134] focus-within:bg-[#303134] border border-[#3c4043] hover:border-[#5f6368] focus-within:border-[#8ab4f8] rounded-full shadow-sm hover:shadow-md focus-within:shadow-md transition-all min-h-[42px] sm:min-h-[46px]">
               <button
                 type="submit"
                 aria-label="Search"
-                className="pl-4 pr-2 text-[#9aa0a6] hover:text-[#8ab4f8] transition-colors"
+                className="pl-3 sm:pl-4 pr-1.5 sm:pr-2 text-[#9aa0a6] hover:text-[#8ab4f8] transition-colors touch-target"
               >
                 <Search className="w-4 h-4" />
               </button>
@@ -127,17 +127,17 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
                 value={query}
                 onChange={(e) => onQueryChange(e.target.value)}
                 placeholder="Search anything..."
-                className="w-full py-2.5 sm:py-3 pr-2 bg-transparent text-sm text-[#e8eaed] placeholder-[#9aa0a6] outline-none font-sans"
+                className="w-full py-2 sm:py-2.5 pr-2 bg-transparent text-sm text-[#e8eaed] placeholder-[#9aa0a6] outline-none font-sans"
                 autoComplete="off"
               />
 
               {/* Action Controls Inside Input */}
-              <div className="flex items-center pr-3 gap-1">
+              <div className="flex items-center pr-2 sm:pr-3 gap-0.5 sm:gap-1">
                 {query && (
                   <button
                     type="button"
                     onClick={onClear}
-                    className="p-1 rounded-full text-[#9aa0a6] hover:text-[#e8eaed] hover:bg-[#3c4043] transition-colors"
+                    className="p-1.5 rounded-full text-[#9aa0a6] hover:text-[#e8eaed] hover:bg-[#3c4043] transition-colors touch-target"
                     title="Clear search"
                     aria-label="Clear input"
                   >
@@ -145,12 +145,12 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
                   </button>
                 )}
 
-                <div className="w-[1px] h-5 bg-[#3c4043] mx-1" />
+                <div className="w-[1px] h-4 sm:h-5 bg-[#3c4043] mx-0.5 sm:mx-1" />
 
                 <button
                   type="button"
                   onClick={onToggleVoice}
-                  className={`p-1.5 rounded-full transition-colors ${
+                  className={`p-1.5 sm:p-2 rounded-full transition-colors touch-target ${
                     isListeningVoice
                       ? 'bg-red-500/20 text-red-400 animate-pulse'
                       : 'text-[#9aa0a6] hover:text-[#8ab4f8] hover:bg-[#3c4043]'
@@ -166,13 +166,13 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
 
           {/* Autocomplete Dropdown */}
           {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute left-0 top-full mt-1.5 w-full bg-[#303134] border border-[#3c4043] rounded-2xl shadow-2xl overflow-hidden z-50 divide-y divide-[#3c4043]">
+            <div className="absolute left-0 top-full mt-1.5 w-full bg-[#303134] border border-[#3c4043] rounded-2xl shadow-2xl overflow-hidden z-50 divide-y divide-[#3c4043] max-h-60 overflow-y-auto">
               {suggestions.map((sugg, idx) => (
                 <button
                   key={idx}
                   type="button"
                   onClick={() => onSelectSuggestion(sugg)}
-                  className="w-full px-4 py-2.5 text-left text-sm font-sans text-[#bdc1c6] hover:text-[#e8eaed] hover:bg-[#3c4043] flex items-center gap-3 transition-colors"
+                  className="w-full px-4 py-2.5 min-h-[44px] text-left text-sm font-sans text-[#bdc1c6] hover:text-[#e8eaed] hover:bg-[#3c4043] flex items-center gap-3 transition-colors"
                 >
                   <Search className="w-3.5 h-3.5 text-[#9aa0a6] shrink-0" />
                   <span className="truncate">{sugg}</span>
@@ -183,22 +183,22 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
         </div>
 
         {/* Right: Subtle Controls (Mode Dropdown, Audio Readout, Settings) */}
-        <div className="flex items-center gap-2 shrink-0">
-          {/* Search Mode Selector */}
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          {/* Search Mode Selector (Responsive: compact pill on mobile, expanded on desktop) */}
           <div className="relative" ref={modeDropdownRef}>
             <button
               type="button"
               onClick={() => setIsModeDropdownOpen((prev) => !prev)}
-              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#303134] hover:bg-[#3c4043] border border-[#3c4043] text-xs text-[#bdc1c6] hover:text-[#e8eaed] transition-colors"
+              className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-[#303134] hover:bg-[#3c4043] border border-[#3c4043] text-xs text-[#bdc1c6] hover:text-[#e8eaed] transition-colors min-h-[38px]"
               title="Change search mode"
             >
               <SlidersHorizontal className="w-3.5 h-3.5 text-[#8ab4f8]" />
-              <span className="font-medium">{modeLabels[currentMode]}</span>
+              <span className="font-medium hidden md:inline">{modeLabels[currentMode]}</span>
               <ChevronDown className="w-3 h-3 text-[#9aa0a6]" />
             </button>
 
             {isModeDropdownOpen && (
-              <div className="absolute right-0 top-full mt-1.5 w-48 bg-[#303134] border border-[#3c4043] rounded-xl shadow-xl py-1 z-50">
+              <div className="absolute right-0 top-full mt-1.5 w-48 max-w-[calc(100vw-2rem)] bg-[#303134] border border-[#3c4043] rounded-xl shadow-xl py-1 z-50">
                 {(['auto', 'web', 'code', 'deep', 'direct'] as SearchMode[]).map((m) => (
                   <button
                     key={m}
@@ -208,7 +208,7 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
                       setIsModeDropdownOpen(false);
                       if (query.trim()) onSubmit(query.trim(), m);
                     }}
-                    className={`w-full px-3 py-2 text-left text-xs flex items-center justify-between transition-colors ${
+                    className={`w-full px-3 py-2.5 min-h-[40px] text-left text-xs flex items-center justify-between transition-colors ${
                       currentMode === m
                         ? 'bg-[#3c4043] text-[#8ab4f8] font-semibold'
                         : 'text-[#bdc1c6] hover:text-[#e8eaed] hover:bg-[#3c4043]'
@@ -227,7 +227,7 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
             <button
               type="button"
               onClick={onToggleSpeech}
-              className={`p-2 rounded-full transition-colors ${
+              className={`p-2 rounded-full transition-colors touch-target ${
                 isSpeaking
                   ? 'bg-[#8ab4f8]/20 text-[#8ab4f8]'
                   : 'text-[#9aa0a6] hover:text-[#e8eaed] hover:bg-[#303134]'
@@ -244,7 +244,7 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
             <button
               type="button"
               onClick={onOpenSettings}
-              className="p-2 rounded-full text-[#9aa0a6] hover:text-[#e8eaed] hover:bg-[#303134] transition-colors"
+              className="p-2 rounded-full text-[#9aa0a6] hover:text-[#e8eaed] hover:bg-[#303134] transition-colors touch-target"
               title="Settings"
               aria-label="Settings"
             >
