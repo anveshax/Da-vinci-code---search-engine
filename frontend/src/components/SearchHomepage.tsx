@@ -108,12 +108,12 @@ export const SearchHomepage: React.FC<SearchHomepageProps> = ({
       />
 
       {/* Centered Integrated Stack: Wordmark in Visual Center of Globe, Search Bar directly beneath */}
-      <main className="relative z-20 flex-1 flex flex-col items-center justify-center px-3 sm:px-6 pointer-events-none -translate-y-[2%] sm:-translate-y-[3%]">
+      <main className="relative z-20 flex-1 flex flex-col items-center justify-center px-4 sm:px-6 pointer-events-none -translate-y-[2%] sm:-translate-y-[3%]">
         {/* ANVESHA Brand Wordmark (Clean Centered Display) */}
-        <div className="text-center mb-4 sm:mb-6 pointer-events-auto flex items-center justify-center gap-2 sm:gap-3">
+        <div className="text-center mb-3 sm:mb-6 pointer-events-auto flex items-center justify-center gap-2 sm:gap-3">
           {/* Sparkle 4-point star icon */}
           <svg
-            className="w-6 h-6 sm:w-8 sm:h-8 md:w-9 md:h-9 text-[#38bdf8] drop-shadow-[0_0_12px_rgba(56,189,248,0.75)]"
+            className="w-5 h-5 xs:w-6 xs:h-6 sm:w-8 sm:h-8 md:w-9 md:h-9 text-[#38bdf8] drop-shadow-[0_0_12px_rgba(56,189,248,0.75)]"
             viewBox="0 0 24 24"
             fill="currentColor"
           >
@@ -137,7 +137,7 @@ export const SearchHomepage: React.FC<SearchHomepageProps> = ({
       </main>
 
       {/* Subtle Bottom Status Pill & Globe Switcher */}
-      <div className="relative z-30 pb-safe pb-4 flex items-center justify-center gap-2 pointer-events-auto">
+      <div className="relative z-30 pb-safe pb-3 sm:pb-4 flex items-center justify-center gap-1.5 sm:gap-2 pointer-events-auto flex-wrap px-3">
         <button
           onClick={toggleGlobe}
           className="px-3 py-1 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/5 text-[11px] font-sans text-neutral-400 hover:text-neutral-200 transition-all flex items-center gap-1.5"

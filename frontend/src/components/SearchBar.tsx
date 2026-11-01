@@ -182,7 +182,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       <form onSubmit={handleSubmit} className="w-full relative group">
         {/* Luminous Translucent Pill Search Container */}
         <div
-          className={`relative flex items-center w-full h-[48px] sm:h-[52px] px-3 sm:px-5 rounded-full transition-all duration-300 select-none bg-[#0e1320]/75 backdrop-blur-xl border ${
+          className={`relative flex items-center w-full h-[50px] sm:h-[52px] px-3.5 sm:px-5 rounded-full transition-all duration-300 select-none bg-[#0e1320]/75 backdrop-blur-xl border ${
             isListening
               ? 'border-[#8ab4f8] ring-2 ring-[#8ab4f8]/35 shadow-[0_0_28px_rgba(138,180,248,0.3)]'
               : 'border-white/15 hover:border-[#8ab4f8]/45 focus-within:border-[#8ab4f8] shadow-[0_8px_32px_rgba(0,0,0,0.65),0_0_20px_rgba(138,180,248,0.08)] focus-within:shadow-[0_8px_36px_rgba(0,0,0,0.75),0_0_28px_rgba(138,180,248,0.2)]'
@@ -225,7 +225,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                 ? 'Listening... Speak your question'
                 : 'Search anything, code, research, web...'
             }
-            className="flex-1 bg-transparent text-[#f8fafc] placeholder-[#8a93a6] text-[14px] sm:text-[16px] font-normal outline-none tracking-normal font-sans min-w-0"
+            className="flex-1 bg-transparent text-[#f8fafc] placeholder-[#8a93a6] text-[16px] font-normal outline-none tracking-normal font-sans min-w-0"
             autoComplete="off"
             autoFocus
           />

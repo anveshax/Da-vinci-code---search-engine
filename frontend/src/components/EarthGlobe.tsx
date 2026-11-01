@@ -199,13 +199,26 @@ export const EarthGlobe: React.FC<EarthGlobeProps> = ({
     const camera = new THREE.PerspectiveCamera(fov, width / height, 0.1, 1000);
 
     const updateCamera = (w: number, h: number) => {
-      if (isRealistic) {
-        const targetPixelDiameter = Math.min(500, Math.min(w, h) * 0.78);
-        const halfFovRad = (fov / 2) * (Math.PI / 180);
-        const zDist = (sphereRadius / Math.tan(halfFovRad)) * (h / targetPixelDiameter);
-        camera.position.set(0, 0, Math.max(7.2, Math.min(10.5, zDist)));
+      if (w >= 1024) {
+        // Desktop / Laptop: strict preservation of original desktop framing
+        if (isRealistic) {
+          const targetPixelDiameter = Math.min(500, Math.min(w, h) * 0.78);
+          const halfFovRad = (fov / 2) * (Math.PI / 180);
+          const zDist = (sphereRadius / Math.tan(halfFovRad)) * (h / targetPixelDiameter);
+          camera.position.set(0, 0, Math.max(7.2, Math.min(10.5, zDist)));
+        } else {
+          camera.position.set(0, 0, 7.8);
+        }
       } else {
-        camera.position.set(0, 0, 7.8);
+        // Mobile & Tablet: responsive viewport-aware camera calculation
+        // Keeps sphere scaled comfortably (~50% width on phones, max 220px) without covering search bar
+        const isPortrait = h > w;
+        const targetPixelDiameter = isPortrait
+          ? Math.min(w * 0.52, Math.min(h * 0.30, 220))
+          : Math.min(h * 0.50, 240);
+        const halfFovRad = (fov / 2) * (Math.PI / 180);
+        const zDist = (sphereRadius / Math.tan(halfFovRad)) * (h / Math.max(120, targetPixelDiameter));
+        camera.position.set(0, 0, Math.max(7.8, Math.min(32.0, zDist)));
       }
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
@@ -221,7 +234,8 @@ export const EarthGlobe: React.FC<EarthGlobeProps> = ({
     });
     renderer.setClearColor(0x000000, 0);
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    const isMobileDevice = width < 768;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobileDevice ? 1.75 : 2));
     container.appendChild(renderer.domElement);
 
     const globeGroup = new THREE.Group();

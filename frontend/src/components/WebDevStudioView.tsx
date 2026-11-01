@@ -329,7 +329,7 @@ export const AnalyticsDashboard: React.FC = () => {
       )}
 
       {/* Navigation Tabs (Preview, Code, Design Spec, Project Explorer, Diagnostics) */}
-      <div className="border-b border-[#1A2030] bg-[#07090F] px-4 sm:px-6 flex items-center gap-2 text-xs font-mono">
+      <div className="border-b border-[#1A2030] bg-[#07090F] px-3 sm:px-6 flex items-center gap-1.5 sm:gap-2 text-xs font-mono overflow-x-auto no-scrollbar shrink-0">
         <button
           onClick={() => setActiveTab('preview')}
           className={`py-3 px-3.5 border-b-2 font-medium flex items-center gap-2 transition-all ${

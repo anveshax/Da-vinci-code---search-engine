@@ -127,7 +127,7 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
                 value={query}
                 onChange={(e) => onQueryChange(e.target.value)}
                 placeholder="Search anything..."
-                className="w-full py-2 sm:py-2.5 pr-2 bg-transparent text-sm text-[#e8eaed] placeholder-[#9aa0a6] outline-none font-sans"
+                className="w-full py-2 sm:py-2.5 pr-2 bg-transparent text-[16px] sm:text-sm text-[#e8eaed] placeholder-[#9aa0a6] outline-none font-sans"
                 autoComplete="off"
               />
 
