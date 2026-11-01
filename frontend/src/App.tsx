@@ -104,7 +104,13 @@ export const App: React.FC = () => {
 
   // Shell Layout State
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
-  const [isMobileNavOpen, setIsMobileNavOpen] = useState<boolean>(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState<boolean>(() => {
+    if (typeof window !== 'undefined' && window.location.search) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('drawer') === 'open';
+    }
+    return false;
+  });
   const [isExtensionPanelOpen, setIsExtensionPanelOpen] = useState<boolean>(false);
   const [isExtensionPanelMinimized, setIsExtensionPanelMinimized] = useState<boolean>(false);
 
@@ -407,7 +413,7 @@ export const App: React.FC = () => {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#050508] text-slate-100 font-sans select-none relative">
-      {/* Collapsible Commercial App Sidebar - Hidden during search results for Google-inspired full-width layout */}
+      {/* Google-Style Minimal Navigation Drawer */}
       {currentView !== 'results' && (
         <AppSidebar
           currentView={currentView}
@@ -416,6 +422,9 @@ export const App: React.FC = () => {
               setIsPromptLibraryOpen(true);
             } else if (view === 'settings') {
               setIsSettingsModalOpen(true);
+            } else if (view === 'extensions') {
+              setIsExtensionPanelOpen(true);
+              setIsExtensionPanelMinimized(false);
             } else {
               setCurrentView(view);
             }
@@ -435,6 +444,13 @@ export const App: React.FC = () => {
           onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
           isMobileOpen={isMobileNavOpen}
           onCloseMobile={() => setIsMobileNavOpen(false)}
+          onToggleExtensionPanel={() => {
+            if (isExtensionPanelMinimized) {
+              setIsExtensionPanelMinimized(false);
+            } else {
+              setIsExtensionPanelOpen((prev) => !prev);
+            }
+          }}
         />
       )}
 

@@ -110,6 +110,7 @@ export type ActiveView =
   | 'prompts'
   | 'bookmarks'
   | 'settings'
+  | 'extensions'
   | 'dashboard';
 
 // --- Web Intelligence & Crawler Types ---

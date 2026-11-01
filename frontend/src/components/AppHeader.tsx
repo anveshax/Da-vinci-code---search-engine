@@ -78,19 +78,23 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
   return (
     <header className="h-14 border-b border-white/10 bg-[#000000]/90 backdrop-blur-md px-2.5 sm:px-6 flex items-center justify-between gap-2 sm:gap-3 shrink-0 z-30 select-none pt-safe">
-      {/* Left: Mobile hamburger & Workspace Selector */}
+      {/* Left: Google-style Hamburger Menu & Workspace Selector */}
       <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         <button
           onClick={onOpenMobileMenu}
-          className="md:hidden p-2 rounded-xl text-[#9aa0a6] hover:text-[#e8eaed] hover:bg-white/10 touch-target transition-colors"
-          title="Open Navigation"
-          aria-label="Open Navigation"
+          className="p-2 rounded-xl text-[#9aa0a6] hover:text-[#e8eaed] hover:bg-white/10 touch-target transition-colors flex items-center justify-center shrink-0"
+          title="Main menu"
+          aria-label="Main menu"
         >
           <Menu className="w-5 h-5" />
         </button>
 
-        {/* Mobile ANVESHA Brand Pill */}
-        <div className="flex items-center gap-1.5 md:hidden shrink-0">
+        {/* ANVESHA Brand Pill */}
+        <div
+          className="flex items-center gap-1.5 shrink-0 cursor-pointer"
+          onClick={() => onSelectLayout('search')}
+          title="ANVESHA Home"
+        >
           <div className="w-6 h-6 rounded-md bg-gradient-to-br from-cyan-400 to-indigo-600 flex items-center justify-center shadow-sm">
             <Sparkles className="w-3.5 h-3.5 text-white" />
           </div>
