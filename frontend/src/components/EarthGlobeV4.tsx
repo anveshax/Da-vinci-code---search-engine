@@ -157,12 +157,11 @@ export const EarthGlobeV4: React.FC<EarthGlobeV4Props> = ({
         // Mobile & Tablet: responsive viewport-aware camera calculation
         const isPortrait = h > w;
         const targetPixelDiameter = isPortrait
-          ? Math.min(w * 0.62, Math.min(h * 0.35, 240))
-          : Math.min(h * 0.52, 260);
+          ? Math.min(w * 0.72, Math.min(h * 0.42, 290))
+          : Math.min(h * 0.58, 300);
         const halfFovRad = (fov / 2) * (Math.PI / 180);
         const zDist = (sphereRadius / Math.tan(halfFovRad)) * (h / Math.max(120, targetPixelDiameter));
-        const yOffset = isPortrait ? 0.32 : 0;
-        camera.position.set(0, yOffset, Math.max(7.8, Math.min(32.0, zDist)));
+        camera.position.set(0, 0, Math.max(7.8, Math.min(32.0, zDist)));
       }
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
