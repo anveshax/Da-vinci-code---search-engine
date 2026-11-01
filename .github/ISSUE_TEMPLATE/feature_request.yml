@@ -1,0 +1,40 @@
+name: "✨ Feature Request"
+description: "Suggest an idea or architectural improvement for ANVESHA"
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: "Have an idea for ANVESHA? We'd love to hear it!"
+  - type: input
+    id: title
+    attributes:
+      label: "Feature Title"
+      description: "A clear and concise title for your feature."
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: "Problem or Opportunity"
+      description: "Is your feature request related to a specific problem or workflow?"
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: "Proposed Solution"
+      description: "Describe the solution you'd like to see implemented."
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: "Feature Category"
+      options:
+        - "3D Graphics & Spatial Computing"
+        - "Multi-Agent AI & Orchestration"
+        - "Search Relevance & Providers"
+        - "Codebase Analysis & AST"
+        - "UI / UX & Accessibility"
+        - "Developer SDK & Extensions"
+        - "Security & Governance"

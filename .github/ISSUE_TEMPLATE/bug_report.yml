@@ -1,0 +1,54 @@
+name: "🐛 Bug Report"
+description: "File a bug report to help us improve ANVESHA"
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: "Thank you for reporting an issue! Please provide as much detail as possible."
+  - type: input
+    id: summary
+    attributes:
+      label: "Bug Summary"
+      description: "A short, descriptive summary of the problem."
+      placeholder: "e.g., Globe V3 fails to render on mobile viewport 360px"
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: "Steps to Reproduce"
+      description: "List step-by-step how to reproduce the bug."
+      placeholder: "1. Open homepage\n2. Open hamburger drawer\n3. Click ..."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: "Expected Behavior"
+      description: "What did you expect to happen?"
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: "Affected Component"
+      options:
+        - "3D Earth Globe (Three.js WebGL)"
+        - "Navigation Drawer & Minimal UI"
+        - "Universal AI Search (Results, AI Overview)"
+        - "Codebase Intelligence & AST Explorer"
+        - "Web Intelligence & Crawler Engine"
+        - "Multi-Agent Orchestrator & Governance"
+        - "Backend API / FastAPI"
+        - "Other"
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: "Environment Information"
+      description: "OS, Browser, Device, Node/Python versions"
+      value: |
+        - OS: [e.g. macOS / Ubuntu / Windows]
+        - Browser: [e.g. Chrome 120, Safari 17]
+        - Device: [e.g. Desktop, iPhone 14]
