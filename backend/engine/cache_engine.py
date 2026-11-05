@@ -28,15 +28,20 @@ class SearchCache:
         self.max_size = max_size
         self.ttl = ttl_seconds
         self._cache: OrderedDict[str, Tuple[float, Any]] = OrderedDict()
+        self.hits = 0
+        self.misses = 0
 
     def get(self, key: str) -> Optional[Any]:
         if key not in self._cache:
+            self.misses += 1
             return None
         timestamp, value = self._cache[key]
         if time.time() - timestamp > self.ttl:
             del self._cache[key]
+            self.misses += 1
             return None
         self._cache.move_to_end(key)
+        self.hits += 1
         return value
 
     def set(self, key: str, value: Any):
@@ -53,6 +58,18 @@ class SearchCache:
             keys_to_remove = [k for k in self._cache if k.startswith(prefix)]
             for k in keys_to_remove:
                 del self._cache[k]
+
+    def get_stats(self) -> Dict[str, Any]:
+        total = self.hits + self.misses
+        ratio = round((self.hits / total * 100), 1) if total > 0 else 0.0
+        return {
+            "size": len(self._cache),
+            "max_size": self.max_size,
+            "ttl_seconds": self.ttl,
+            "hits": self.hits,
+            "misses": self.misses,
+            "hit_ratio_percent": ratio,
+        }
 
 
 class CircuitBreaker:

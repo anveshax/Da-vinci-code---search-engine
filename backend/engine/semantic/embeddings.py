@@ -273,6 +273,180 @@ class GeminiEmbeddingProvider(BaseEmbeddingProvider):
             }
 
 
+class OllamaEmbeddingProvider(BaseEmbeddingProvider):
+    """
+    Local Ollama Embedding Provider.
+    Generates dense embeddings offline using local models such as 'nomic-embed-text' (768-dim),
+    'mxbai-embed-large' (1024-dim), or 'all-minilm' (384-dim).
+    Zero external cloud network calls.
+    """
+
+    def __init__(
+        self,
+        base_url: Optional[str] = None,
+        model: str = "nomic-embed-text",
+        dimension: int = 768,
+        timeout: float = 60.0,
+        max_batch_size: int = 32,
+    ):
+        clean_model = model.strip() if model else "nomic-embed-text"
+        super().__init__(provider_id="ollama", model=clean_model, dimension=dimension)
+        self.base_url = (base_url or os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")).rstrip("/")
+        self.timeout = timeout
+        self.max_batch_size = max_batch_size
+        self._client: Optional[httpx.Client] = None
+
+    def _get_client(self) -> httpx.Client:
+        if self._client is None or self._client.is_closed:
+            self._client = httpx.Client(timeout=self.timeout)
+        return self._client
+
+    def _normalize_vector(self, vec: List[float]) -> List[float]:
+        """Normalizes vector to unit length (L2 norm) for cosine dot product."""
+        if not vec:
+            return [0.0] * self.dimension
+        sq_sum = sum(x * x for x in vec)
+        if sq_sum <= 0.0:
+            return vec
+        norm = math.sqrt(sq_sum)
+        return [x / norm for x in vec]
+
+    def embed_text(self, text: str) -> List[float]:
+        """Generates embedding for a single text string with caching."""
+        if not text or not text.strip():
+            return [0.0] * self.dimension
+
+        clean_text = text.strip()
+        cache_key = f"emb:ollama:{self.model}:{self.dimension}:{clean_text}"
+        try:
+            from engine.cache_engine import embedding_cache
+            cached = embedding_cache.get(cache_key, dim=self.dimension)
+            if cached is not None:
+                return cached
+        except Exception:
+            pass
+
+        results = self.embed_batch([clean_text])
+        if results and len(results) > 0:
+            vec = results[0]
+            try:
+                from engine.cache_engine import embedding_cache
+                embedding_cache.set(cache_key, vec)
+            except Exception:
+                pass
+            return vec
+        return [0.0] * self.dimension
+
+    def embed_batch(self, texts: List[str]) -> List[List[float]]:
+        """
+        Embeds a batch of texts using Ollama /api/embed (or fallback /api/embeddings).
+        """
+        if not texts:
+            return []
+
+        sanitized = [t.strip() if t and t.strip() else " " for t in texts]
+        all_embeddings: List[List[float]] = []
+        client = self._get_client()
+
+        for i in range(0, len(sanitized), self.max_batch_size):
+            batch = sanitized[i:i + self.max_batch_size]
+            batch_vectors: List[List[float]] = []
+
+            # 1. Try modern Ollama /api/embed (batch endpoint)
+            try:
+                res = client.post(
+                    f"{self.base_url}/api/embed",
+                    json={"model": self.model, "input": batch, "keep_alive": "5m"}
+                )
+                if res.status_code == 200:
+                    data = res.json()
+                    embs = data.get("embeddings", [])
+                    for raw_vec in embs:
+                        if len(raw_vec) != self.dimension:
+                            self.dimension = len(raw_vec)
+                        batch_vectors.append(self._normalize_vector(raw_vec))
+                elif res.status_code == 404:
+                    # Older Ollama version without /api/embed -> fallback to /api/embeddings sequentially
+                    for single_text in batch:
+                        single_res = client.post(
+                            f"{self.base_url}/api/embeddings",
+                            json={"model": self.model, "prompt": single_text, "keep_alive": "5m"}
+                        )
+                        if single_res.status_code == 200:
+                            raw_vec = single_res.json().get("embedding", [])
+                            if len(raw_vec) != self.dimension:
+                                self.dimension = len(raw_vec)
+                            batch_vectors.append(self._normalize_vector(raw_vec))
+                        else:
+                            raise EmbeddingError(
+                                f"Ollama /api/embeddings failed ({single_res.status_code}): {single_res.text[:200]}",
+                                "ollama",
+                                single_res.status_code
+                            )
+                else:
+                    raise EmbeddingError(
+                        f"Ollama /api/embed failed ({res.status_code}): {res.text[:200]}",
+                        "ollama",
+                        res.status_code
+                    )
+
+            except (httpx.ConnectError, httpx.TimeoutException, EmbeddingError) as exc:
+                is_strict = os.getenv("LOCAL_AI_STRICT_MODE", "false").lower() in ("true", "1")
+                if is_strict:
+                    raise EmbeddingError(
+                        f"Local Ollama embedding failed: {exc}. Ensure Ollama is running and model '{self.model}' is pulled ('ollama pull {self.model}').",
+                        "ollama"
+                    )
+                logger.warning(
+                    f"Ollama embedding unavailable ({exc}). Using deterministic LocalHashEmbeddingProvider fallback."
+                )
+                fallback = LocalHashEmbeddingProvider(dimension=self.dimension)
+                batch_vectors = fallback.embed_batch(batch)
+
+            all_embeddings.extend(batch_vectors)
+
+        return all_embeddings
+
+    def check_health(self) -> Dict[str, Any]:
+        """Checks if local Ollama daemon is reachable and whether the embedding model exists."""
+        try:
+            client = self._get_client()
+            res = client.get(f"{self.base_url}/api/tags")
+            if res.status_code == 200:
+                data = res.json()
+                models = [m.get("name", "") for m in data.get("models", [])]
+                clean_name = self.model.split(":")[0].lower()
+                has_model = any(clean_name in m.lower() for m in models)
+                return {
+                    "status": "healthy" if has_model else "model_missing",
+                    "provider": "ollama",
+                    "model": self.model,
+                    "dimension": self.dimension,
+                    "is_local": True,
+                    "message": (
+                        f"Local Ollama embedding provider active with model '{self.model}'."
+                        if has_model
+                        else f"Ollama is running, but embedding model '{self.model}' is not pulled yet. Run: 'ollama pull {self.model}'"
+                    )
+                }
+            else:
+                return {
+                    "status": "error",
+                    "provider": "ollama",
+                    "model": self.model,
+                    "error": f"Ollama returned HTTP {res.status_code}",
+                }
+        except Exception as exc:
+            return {
+                "status": "offline",
+                "provider": "ollama",
+                "model": self.model,
+                "dimension": self.dimension,
+                "is_local": True,
+                "error": f"Cannot connect to local Ollama at {self.base_url}: {str(exc)}",
+            }
+
+
 class LocalHashEmbeddingProvider(BaseEmbeddingProvider):
     """
     Deterministic Pure-Python Feature-Hashing Embedding Provider.
@@ -354,10 +528,11 @@ def get_embedding_provider(force_provider: Optional[str] = None) -> BaseEmbeddin
     """
     Factory function returning the configured embedding provider.
     Reads environment variables:
-    - EMBEDDING_PROVIDER ('gemini' or 'local_hash')
-    - EMBEDDING_MODEL ('gemini-embedding-001' or 'gemini-embedding-2')
+    - EMBEDDING_PROVIDER ('gemini', 'ollama', or 'local_hash')
+    - EMBEDDING_MODEL ('gemini-embedding-001', 'nomic-embed-text', etc.)
     - EMBEDDING_DIM ('768', '1536', '3072')
     - GEMINI_API_KEY
+    - OLLAMA_BASE_URL, OLLAMA_EMBED_MODEL
     """
     global _embedding_provider_instance
     if _embedding_provider_instance and not force_provider:
@@ -365,10 +540,14 @@ def get_embedding_provider(force_provider: Optional[str] = None) -> BaseEmbeddin
 
     provider_name = (force_provider or os.getenv("EMBEDDING_PROVIDER", "gemini")).lower().strip()
     dim = int(os.getenv("EMBEDDING_DIM", "768"))
-    model = os.getenv("EMBEDDING_MODEL", "gemini-embedding-001").strip()
     gemini_key = os.getenv("EMBEDDING_API_KEY") or os.getenv("GEMINI_API_KEY", "").strip()
 
-    if provider_name == "gemini" and gemini_key:
+    if provider_name == "ollama":
+        ollama_model = os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text").strip()
+        ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").strip()
+        provider = OllamaEmbeddingProvider(base_url=ollama_base_url, model=ollama_model, dimension=dim)
+    elif provider_name == "gemini" and gemini_key:
+        model = os.getenv("EMBEDDING_MODEL", "gemini-embedding-001").strip()
         provider = GeminiEmbeddingProvider(api_key=gemini_key, model=model, dimension=dim)
     elif provider_name == "local_hash" or not gemini_key:
         if not gemini_key and provider_name == "gemini":

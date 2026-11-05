@@ -378,14 +378,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           if (pid === 'gemini') setInputModel('gemini-3-flash-preview');
                           else if (pid === 'groq') setInputModel('llama-3.3-70b-versatile');
                           else if (pid === 'openrouter') setInputModel('meta-llama/llama-3.3-70b-instruct');
+                          else if (pid === 'ollama') {
+                            setInputModel('llama3');
+                            setInputBaseUrl('http://localhost:11434');
+                          }
                           else setInputModel('gpt-4o-mini');
                         }}
                         className="w-full px-3 py-2 rounded-xl bg-[#141B2E] border border-[#2A344C] text-white text-xs outline-none"
                       >
                         <option value="gemini">Google Gemini (Gemini 3 Flash / 3.1 Flash Lite)</option>
                         <option value="groq">Groq (Ultra-Fast Llama 3.3)</option>
+                        <option value="ollama">Ollama (100% Offline Local AI & Embeddings)</option>
                         <option value="openrouter">OpenRouter (Claude, Llama, DeepSeek)</option>
-                        <option value="openai_compatible">OpenAI-Compatible (Ollama, vLLM, Custom)</option>
+                        <option value="openai_compatible">OpenAI-Compatible (vLLM, LMStudio, Custom)</option>
                       </select>
                     </div>
 
@@ -405,18 +410,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                   <div>
                     <label className="block text-slate-400 text-[11px] mb-1 font-mono">
-                      API Key:
+                      {selectedProviderId === 'ollama' ? 'API Key (Optional for Local Ollama):' : 'API Key:'}
                     </label>
                     <input
                       type="password"
                       value={inputApiKey}
                       onChange={(e) => setInputApiKey(e.target.value)}
-                      placeholder="Enter new API Key (stored securely on backend)..."
+                      placeholder={
+                        selectedProviderId === 'ollama'
+                          ? 'No API key required for local Ollama'
+                          : 'Enter new API Key (stored securely on backend)...'
+                      }
                       className="w-full px-3 py-2 rounded-xl bg-[#141B2E] border border-[#2A344C] text-white text-xs outline-none font-mono"
                     />
                   </div>
 
-                  {selectedProviderId === 'openai_compatible' && (
+                  {(selectedProviderId === 'openai_compatible' || selectedProviderId === 'ollama') && (
                     <div>
                       <label className="block text-slate-400 text-[11px] mb-1 font-mono">
                         Base URL:
@@ -425,7 +434,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         type="text"
                         value={inputBaseUrl}
                         onChange={(e) => setInputBaseUrl(e.target.value)}
-                        placeholder="https://api.openai.com/v1 or http://localhost:11434/v1"
+                        placeholder={
+                          selectedProviderId === 'ollama'
+                            ? 'http://localhost:11434'
+                            : 'https://api.openai.com/v1 or http://localhost:11434/v1'
+                        }
                         className="w-full px-3 py-2 rounded-xl bg-[#141B2E] border border-[#2A344C] text-white text-xs outline-none font-mono"
                       />
                     </div>

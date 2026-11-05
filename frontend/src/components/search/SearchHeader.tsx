@@ -74,6 +74,7 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
   const modeLabels: Record<SearchMode, string> = {
     auto: 'All / Auto',
     web: 'Web Mode',
+    news: 'Global News',
     code: 'Code Mode',
     deep: 'Deep Research',
     direct: 'Direct AI',

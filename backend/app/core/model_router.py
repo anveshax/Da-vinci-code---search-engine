@@ -46,6 +46,14 @@ MODEL_CAPABILITY_PROFILES = {
         "cost_efficiency": 85,
         "description": "OpenAI Compatible Endpoint",
     },
+    "ollama": {
+        "coding": 87,
+        "reasoning": 86,
+        "context_window": 8192,
+        "speed": 82,
+        "cost_efficiency": 100,
+        "description": "Local Ollama Llama 3 / Quantized LLM — 100% Private, Offline & Local",
+    },
 }
 
 
@@ -63,6 +71,22 @@ class ModelRouter:
         task_type: "code" | "web" | "deep" | "direct" | "document" | "multi_agent"
         """
         configured_providers = ai_provider.get_configured_providers()
+
+        # 0. Explicit Local AI Mode (Ollama)
+        if task_type == "local" or user_provider_override == "ollama":
+            from app.core.config import settings
+            cfg = configured_providers.get("ollama", {})
+            model = user_model_override or cfg.get("model") or getattr(settings, "OLLAMA_LLM_MODEL", "llama3")
+            base_url = cfg.get("base_url") or getattr(settings, "OLLAMA_BASE_URL", "http://localhost:11434")
+            instance = create_provider_instance("ollama", "local_no_key_required", model, base_url)
+            return {
+                "provider": "ollama",
+                "model": model,
+                "instance": instance,
+                "reason": f"Local AI Execution: 100% Offline inference via Ollama ({model})",
+                "is_fallback": False,
+                "capabilities": MODEL_CAPABILITY_PROFILES.get("ollama", {}),
+            }
 
         # 1. User manual override
         if user_provider_override and user_provider_override in configured_providers:

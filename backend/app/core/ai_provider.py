@@ -570,6 +570,198 @@ class GeminiProvider(BaseAIProvider):
         return ""
 
 
+# --- 3. Native Local Ollama Provider (100% Offline, Zero-External API) ---
+
+class OllamaProvider(BaseAIProvider):
+    """
+    Native Fully-Local AI Provider powered by Ollama.
+    Communicates directly with local Ollama runtime (http://localhost:11434).
+    100% offline, private, and zero cloud API token dependencies.
+    """
+
+    def __init__(
+        self,
+        model: str = "llama3",
+        base_url: str = "http://localhost:11434",
+        timeout: float = 180.0,
+        keep_alive: str = "5m",
+    ):
+        super().__init__("ollama", api_key="local_no_key_required", model=model, base_url=base_url.rstrip("/"))
+        self.timeout = timeout
+        self.keep_alive = keep_alive
+
+    async def check_health(self) -> Dict[str, Any]:
+        """Validates that local Ollama daemon is running and verifies model availability."""
+        url = f"{self.base_url}/api/tags"
+        try:
+            start = time.time()
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                res = await client.get(url)
+                latency = round((time.time() - start) * 1000)
+                if res.status_code == 200:
+                    data = res.json()
+                    models = [m.get("name", "") for m in data.get("models", [])]
+                    model_clean = self.model.split(":")[0].lower()
+                    model_found = any(model_clean in m.lower() for m in models)
+                    return {
+                        "status": "connected" if model_found else "model_missing",
+                        "provider": "ollama",
+                        "model": self.model,
+                        "available_models": models,
+                        "latency_ms": latency,
+                        "is_local": True,
+                        "message": (
+                            f"Local Ollama is connected. Model '{self.model}' is available."
+                            if model_found
+                            else f"Ollama is running, but model '{self.model}' is not pulled yet. Run: 'ollama pull {self.model}'"
+                        ),
+                    }
+                else:
+                    return {
+                        "status": "error",
+                        "provider": "ollama",
+                        "status_code": res.status_code,
+                        "error": f"Ollama returned HTTP {res.status_code}",
+                        "is_local": True,
+                    }
+        except httpx.ConnectError:
+            return {
+                "status": "offline",
+                "provider": "ollama",
+                "model": self.model,
+                "is_local": True,
+                "error": f"Cannot connect to local Ollama daemon at {self.base_url}. Ensure Ollama is running ('ollama serve').",
+            }
+        except Exception as e:
+            return {
+                "status": "offline",
+                "provider": "ollama",
+                "model": self.model,
+                "is_local": True,
+                "error": str(e),
+            }
+
+    async def stream_chat(
+        self,
+        messages: List[Dict[str, str]],
+        system_prompt: Optional[str] = None,
+        max_tokens: int = 2048,
+        temperature: float = 0.3,
+    ) -> AsyncGenerator[str, None]:
+        """Streams completion token-by-token directly from local Ollama /api/chat."""
+        url = f"{self.base_url}/api/chat"
+        chat_messages: List[Dict[str, str]] = []
+        if system_prompt:
+            chat_messages.append({"role": "system", "content": system_prompt})
+        chat_messages.extend(messages)
+
+        payload = {
+            "model": self.model,
+            "messages": chat_messages,
+            "stream": True,
+            "options": {
+                "temperature": temperature,
+                "num_predict": max_tokens,
+            },
+            "keep_alive": self.keep_alive,
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                async with client.stream("POST", url, json=payload) as response:
+                    if response.status_code != 200:
+                        body = await response.aread()
+                        raise AIProviderError(
+                            f"Ollama local error ({response.status_code}): {body.decode(errors='replace')[:250]}",
+                            "ollama",
+                            response.status_code,
+                        )
+                    async for line in response.aiter_lines():
+                        if not line:
+                            continue
+                        try:
+                            chunk = json.loads(line)
+                            token = chunk.get("message", {}).get("content", "")
+                            if token:
+                                yield token
+                            if chunk.get("done", False):
+                                break
+                        except json.JSONDecodeError:
+                            continue
+        except httpx.ConnectError:
+            raise AIProviderError(
+                f"Cannot connect to local Ollama daemon at {self.base_url}. Please ensure Ollama is running ('ollama serve') or run 'ollama pull {self.model}'.",
+                "ollama",
+                status_code=503,
+                retryable=True,
+            )
+        except httpx.TimeoutException:
+            raise AIProviderError(
+                f"Local Ollama generation timed out after {self.timeout}s for model '{self.model}'.",
+                "ollama",
+                status_code=504,
+                retryable=True,
+            )
+        except Exception as e:
+            if isinstance(e, AIProviderError):
+                raise
+            raise AIProviderError(f"Ollama streaming exception: {str(e)}", "ollama")
+
+    async def generate_chat(
+        self,
+        messages: List[Dict[str, str]],
+        system_prompt: Optional[str] = None,
+        max_tokens: int = 2048,
+        temperature: float = 0.3,
+    ) -> str:
+        """Non-streaming completion from local Ollama."""
+        url = f"{self.base_url}/api/chat"
+        chat_messages: List[Dict[str, str]] = []
+        if system_prompt:
+            chat_messages.append({"role": "system", "content": system_prompt})
+        chat_messages.extend(messages)
+
+        payload = {
+            "model": self.model,
+            "messages": chat_messages,
+            "stream": False,
+            "options": {
+                "temperature": temperature,
+                "num_predict": max_tokens,
+            },
+            "keep_alive": self.keep_alive,
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                res = await client.post(url, json=payload)
+                if res.status_code == 200:
+                    data = res.json()
+                    return data.get("message", {}).get("content", "")
+                else:
+                    raise AIProviderError(
+                        f"Ollama local error ({res.status_code}): {res.text[:250]}",
+                        "ollama",
+                        res.status_code,
+                    )
+        except httpx.ConnectError:
+            raise AIProviderError(
+                f"Cannot connect to local Ollama daemon at {self.base_url}. Please verify Ollama is running ('ollama serve').",
+                "ollama",
+                status_code=503,
+            )
+        except httpx.TimeoutException:
+            raise AIProviderError(
+                f"Local Ollama generation timed out after {self.timeout}s for model '{self.model}'.",
+                "ollama",
+                status_code=504,
+            )
+        except Exception as e:
+            if isinstance(e, AIProviderError):
+                raise
+            raise AIProviderError(f"Ollama generation exception: {str(e)}", "ollama")
+
+
 # --- Factory & Fallback Orchestrator ---
 
 DEFAULT_MODELS = {
@@ -577,6 +769,7 @@ DEFAULT_MODELS = {
     "groq": os.getenv("GROQ_DEFAULT_MODEL", "qwen/qwen3.8-27b"),
     "openrouter": "meta-llama/llama-3.3-70b-instruct",
     "openai_compatible": "gpt-4o-mini",
+    "ollama": os.getenv("OLLAMA_LLM_MODEL", "llama3"),
 }
 
 DEFAULT_BASE_URLS = {
@@ -584,17 +777,22 @@ DEFAULT_BASE_URLS = {
     "groq": "https://api.groq.com/openai/v1",
     "openrouter": "https://openrouter.ai/api/v1",
     "openai_compatible": "https://api.openai.com/v1",
+    "ollama": os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
 }
 
 
 def create_provider_instance(provider_name: str, api_key: str, model: Optional[str] = None, base_url: Optional[str] = None) -> BaseAIProvider:
     """Factory creating the appropriate provider instance."""
     p = provider_name.lower().strip()
-    m = model or DEFAULT_MODELS.get(p, "llama-3.3-70b-versatile")
-    b = base_url or DEFAULT_BASE_URLS.get(p, "https://api.groq.com/openai/v1")
+    m = model or DEFAULT_MODELS.get(p, "llama3" if p == "ollama" else "llama-3.3-70b-versatile")
+    b = base_url or DEFAULT_BASE_URLS.get(p, "http://localhost:11434" if p == "ollama" else "https://api.groq.com/openai/v1")
 
     if p == "gemini":
         return GeminiProvider(api_key=api_key, model=m, base_url=b)
+    elif p == "ollama":
+        timeout = getattr(settings, "OLLAMA_TIMEOUT", 180.0)
+        keep_alive = getattr(settings, "OLLAMA_KEEP_ALIVE", "5m")
+        return OllamaProvider(model=m, base_url=b, timeout=timeout, keep_alive=keep_alive)
     else:
         return OpenAICompatibleProvider(provider_id=p, api_key=api_key, model=m, base_url=b)
 
@@ -642,6 +840,19 @@ class UnifiedAIProviderService:
                     "is_default": not has_gemini,
                     "is_fallback": has_gemini,
                 }
+
+        # Ensure local Ollama provider is registered if enabled
+        if getattr(settings, "LOCAL_AI_ENABLED", True) and "ollama" not in saved:
+            saved["ollama"] = {
+                "id": "ollama",
+                "name": "Ollama (Local AI)",
+                "api_key": "local_no_key_required",
+                "model": getattr(settings, "OLLAMA_LLM_MODEL", "llama3"),
+                "base_url": getattr(settings, "OLLAMA_BASE_URL", "http://localhost:11434"),
+                "is_default": False,
+                "is_fallback": False,
+                "is_local": True,
+            }
         return saved
 
     def get_public_provider_status(self) -> List[Dict[str, Any]]:
@@ -806,6 +1017,11 @@ class UnifiedAIProviderService:
                 yield token
         except (RateLimitError, AIProviderError) as e:
             logger.warning(f"Primary provider {primary.provider_id} failed: {e}")
+            # Strict Local Isolation: Never leak queries to cloud fallbacks when using Ollama / local mode
+            if primary.provider_id == "ollama":
+                yield f"\n\n⚠️ *Local AI Error (Ollama): {str(e)}*\n\n> *Strict Local Mode is active — requests will never silently fall back to cloud providers.*"
+                return
+
             if fallback and fallback.api_key:
                 yield f"\n\n> ⚠️ *Primary provider ({primary.provider_id.upper()}) unavailable ({e}). Automatically switching to fallback provider: {fallback.provider_id.upper()} ({fallback.model})...*\n\n"
                 try:
@@ -832,6 +1048,8 @@ class UnifiedAIProviderService:
         try:
             return await primary.generate_chat(messages, system_prompt, max_tokens, temperature)
         except (RateLimitError, AIProviderError) as e:
+            if primary.provider_id == "ollama":
+                raise AIProviderError(f"Local AI Error (Ollama): {str(e)}", "ollama")
             if fallback and fallback.api_key:
                 logger.warning(f"Primary {primary.provider_id} failed. Attempting fallback {fallback.provider_id}")
                 return await fallback.generate_chat(messages, system_prompt, max_tokens, temperature)

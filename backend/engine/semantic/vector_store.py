@@ -266,11 +266,13 @@ class SQLiteVectorStore:
             return []
 
         dim = self.provider.dimension
+        model_name = self.provider.model
         fmt = f"{dim}f"
 
-        # 2. Fetch candidate chunks
+        # 2. Fetch candidate chunks (strictly isolate by model/dimension to prevent contamination)
         with get_db_connection() as conn:
             cursor = conn.cursor()
+            # First attempt: match both dimension and exact embedding model
             if domain_filter:
                 cursor.execute(
                     """
@@ -278,8 +280,9 @@ class SQLiteVectorStore:
                            heading_context, content, embedding_blob, created_at
                     FROM crawled_document_chunks
                     WHERE domain = ? AND embedding_blob IS NOT NULL
+                      AND embedding_dim = ? AND embedding_model = ?
                     """,
-                    (domain_filter.lower().strip(),),
+                    (domain_filter.lower().strip(), dim, model_name),
                 )
             else:
                 cursor.execute(
@@ -288,10 +291,36 @@ class SQLiteVectorStore:
                            heading_context, content, embedding_blob, created_at
                     FROM crawled_document_chunks
                     WHERE embedding_blob IS NOT NULL
-                    """
+                      AND embedding_dim = ? AND embedding_model = ?
+                    """,
+                    (dim, model_name),
                 )
 
             rows = cursor.fetchall()
+
+            # Second attempt: if no model-isolated rows found, check matching dimension with general/hash model
+            if not rows:
+                if domain_filter:
+                    cursor.execute(
+                        """
+                        SELECT id, document_id, url, canonical_url, domain, title,
+                               heading_context, content, embedding_blob, created_at
+                        FROM crawled_document_chunks
+                        WHERE domain = ? AND embedding_blob IS NOT NULL AND embedding_dim = ?
+                        """,
+                        (domain_filter.lower().strip(), dim),
+                    )
+                else:
+                    cursor.execute(
+                        """
+                        SELECT id, document_id, url, canonical_url, domain, title,
+                               heading_context, content, embedding_blob, created_at
+                        FROM crawled_document_chunks
+                        WHERE embedding_blob IS NOT NULL AND embedding_dim = ?
+                        """,
+                        (dim,),
+                    )
+                rows = cursor.fetchall()
 
         if not rows:
             return []
@@ -388,6 +417,31 @@ class SQLiteVectorStore:
             "chunks_created": total_chunks_created,
             "total_pending_remaining": max(0, len(rows) - total_backfilled_docs),
         }
+
+    def get_model_stats(self) -> Dict[str, Any]:
+        """Returns distribution of stored vectors by model and dimension."""
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT embedding_model, embedding_dim, COUNT(*) as chunk_count
+                FROM crawled_document_chunks
+                WHERE embedding_blob IS NOT NULL
+                GROUP BY embedding_model, embedding_dim
+            """)
+            rows = cursor.fetchall()
+            return {
+                "active_provider": self.provider.provider_id,
+                "active_model": self.provider.model,
+                "active_dim": self.provider.dimension,
+                "stored_models": [
+                    {
+                        "model": r["embedding_model"],
+                        "dimension": r["embedding_dim"],
+                        "chunk_count": r["chunk_count"],
+                    }
+                    for r in rows
+                ],
+            }
 
     def count_chunks(self) -> int:
         """Returns total passage chunks in the vector index."""

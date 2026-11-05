@@ -2,10 +2,12 @@ import React from 'react';
 import {
   Layers,
   Sparkles,
+  Globe,
   Image as ImageIcon,
   Newspaper,
   MapPin,
   Video,
+  BookOpen,
   FolderCode,
   Wrench
 } from 'lucide-react';
@@ -13,10 +15,12 @@ import {
 export type SearchNavTabId =
   | 'all'
   | 'ai_overview'
-  | 'images'
+  | 'web'
   | 'news'
-  | 'maps'
+  | 'images'
   | 'videos'
+  | 'maps'
+  | 'research'
   | 'code'
   | 'deep'
   | 'tools';
@@ -37,12 +41,13 @@ export const SearchNavigationTabs: React.FC<SearchNavigationTabsProps> = ({
   const tabs: Array<{ id: SearchNavTabId; label: string; icon: React.ReactNode }> = [
     { id: 'all', label: 'All', icon: <Layers className="w-4 h-4" /> },
     { id: 'ai_overview', label: 'AI Overview', icon: <Sparkles className="w-4 h-4" /> },
-    { id: 'images', label: 'Images', icon: <ImageIcon className="w-4 h-4" /> },
+    { id: 'web', label: 'Web', icon: <Globe className="w-4 h-4" /> },
     { id: 'news', label: 'News', icon: <Newspaper className="w-4 h-4" /> },
-    { id: 'maps', label: 'Maps', icon: <MapPin className="w-4 h-4" /> },
+    { id: 'images', label: 'Images', icon: <ImageIcon className="w-4 h-4" /> },
     { id: 'videos', label: 'Videos', icon: <Video className="w-4 h-4" /> },
+    { id: 'maps', label: 'Maps', icon: <MapPin className="w-4 h-4" /> },
+    { id: 'research', label: 'Books & Research', icon: <BookOpen className="w-4 h-4" /> },
     { id: 'code', label: 'Code', icon: <FolderCode className="w-4 h-4" /> },
-    { id: 'deep', label: 'Deep Research', icon: <Sparkles className="w-4 h-4" /> },
     { id: 'tools', label: 'Tools', icon: <Wrench className="w-4 h-4" /> },
   ];
 

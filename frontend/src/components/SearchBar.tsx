@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Mic, MicOff, X, Zap, FolderCode, Globe, Sparkles, Bot, History, ArrowUpRight } from 'lucide-react';
+import { Search, Mic, MicOff, X, Zap, FolderCode, Globe, Newspaper, Sparkles, Bot, History, ArrowUpRight } from 'lucide-react';
 import { SearchMode } from '../types/api';
 import { fetchSearchSuggestions } from '../services/api';
+import { voiceService } from '../services/voiceService';
 
 // Web Speech API interface
 interface IWindow extends Window {
@@ -51,7 +52,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     } catch {}
   };
 
-  // Debounced auto-suggestions with race condition prevention
+  // Debounced auto-suggestions with race condition and request cancellation
   useEffect(() => {
     let isCurrent = true;
     const cleanQuery = query.trim();
@@ -61,11 +62,12 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       return;
     }
 
+    const controller = new AbortController();
+
     const timer = setTimeout(async () => {
       try {
-        const res = await fetchSearchSuggestions(cleanQuery);
-        if (isCurrent) {
-          // Guarantee safe array of strings
+        const res = await fetchSearchSuggestions(cleanQuery, controller.signal);
+        if (isCurrent && !controller.signal.aborted) {
           const safeStrings = (res || []).map((item) =>
             typeof item === 'string' ? item : (item as any)?.name || (item as any)?.title || String(item ?? '')
           ).filter(Boolean);
@@ -74,10 +76,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       } catch {
         if (isCurrent) setSuggestions([]);
       }
-    }, 200);
+    }, 180);
 
     return () => {
       isCurrent = false;
+      controller.abort();
       clearTimeout(timer);
     };
   }, [query]);
@@ -139,26 +142,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   }, [onSearch, searchMode]);
 
   const toggleVoice = () => {
-    setVoiceError(null);
-    if (!recognitionRef.current) {
-      setVoiceError('Speech recognition is not supported in this browser.');
-      setTimeout(() => setVoiceError(null), 4000);
-      return;
-    }
-
-    if (isListening) {
-      recognitionRef.current.stop();
-      setIsListening(false);
-    } else {
-      setSpeechTranscript('');
-      try {
-        recognitionRef.current.start();
-        setIsListening(true);
-      } catch {
-        recognitionRef.current.stop();
-        setIsListening(false);
-      }
-    }
+    // Launch full ANVESHA Voice Engine 3.0
+    voiceService.openAssistant();
   };
 
   const isMobileScreen = typeof window !== 'undefined' && window.innerWidth < 640;
@@ -392,6 +377,18 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         >
           <Globe className="w-3.5 h-3.5 text-[#8ab4f8]" />
           <span>Web</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setSearchMode('news')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-sans transition-all border ${
+            searchMode === 'news'
+              ? 'bg-cyan-400/15 backdrop-blur-md text-cyan-300 border-cyan-400/40 font-medium shadow-[0_0_12px_rgba(34,211,238,0.2)]'
+              : 'bg-[#0e1320]/50 backdrop-blur-md text-[#8a93a6] border-white/10 hover:bg-[#0e1320]/80 hover:text-[#f8fafc] hover:border-white/20'
+          }`}
+        >
+          <Newspaper className="w-3.5 h-3.5 text-cyan-400" />
+          <span>News</span>
         </button>
         <button
           type="button"

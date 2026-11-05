@@ -37,12 +37,16 @@ _is_initialized = False
 
 
 def _create_raw_connection() -> sqlite3.Connection:
-    """Creates a direct SQLite connection with row dictionary access, WAL mode, and concurrency timeouts."""
+    """Creates a high-performance SQLite connection with row dictionary access, WAL mode, memory cache, and concurrency timeouts."""
     conn = sqlite3.connect(str(DB_PATH), timeout=30.0)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     conn.execute("PRAGMA journal_mode = WAL")
     conn.execute("PRAGMA busy_timeout = 10000")
+    conn.execute("PRAGMA synchronous = NORMAL")
+    conn.execute("PRAGMA cache_size = -32000")
+    conn.execute("PRAGMA mmap_size = 268435456")
+    conn.execute("PRAGMA temp_store = MEMORY")
     return conn
 
 
@@ -545,6 +549,102 @@ def init_db():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_chunks_url ON crawled_document_chunks(url)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_chunks_domain ON crawled_document_chunks(domain)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_chunks_hash ON crawled_document_chunks(content_hash)")
+
+        # --- 12. ANVESHA Upgrades: Intelligent Browser, Tor, Security & Research Schema ---
+
+        # Browser Tabs
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS browser_tabs (
+                id TEXT PRIMARY KEY,
+                session_id TEXT NOT NULL DEFAULT 'default',
+                url TEXT NOT NULL,
+                title TEXT NOT NULL,
+                mode TEXT NOT NULL DEFAULT 'normal',
+                is_pinned INTEGER DEFAULT 0,
+                is_reader_mode INTEGER DEFAULT 0,
+                is_desktop_site INTEGER DEFAULT 0,
+                position INTEGER DEFAULT 0,
+                created_at REAL NOT NULL,
+                updated_at REAL NOT NULL
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_browser_tabs_session ON browser_tabs(session_id, position)")
+
+        # Browser History (isolated from private/incognito tabs)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS browser_history (
+                id TEXT PRIMARY KEY,
+                url TEXT NOT NULL,
+                title TEXT NOT NULL,
+                domain TEXT NOT NULL,
+                favicon TEXT,
+                visit_timestamp REAL NOT NULL,
+                is_private INTEGER DEFAULT 0
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_browser_history_ts ON browser_history(visit_timestamp DESC)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_browser_history_domain ON browser_history(domain)")
+
+        # Browser Bookmarks
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS browser_bookmarks (
+                id TEXT PRIMARY KEY,
+                url TEXT UNIQUE NOT NULL,
+                title TEXT NOT NULL,
+                domain TEXT NOT NULL,
+                snippet TEXT,
+                folder TEXT NOT NULL DEFAULT 'General',
+                favicon TEXT,
+                created_at REAL NOT NULL
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_browser_bookmarks_folder ON browser_bookmarks(folder)")
+
+        # Deep Research Reports Library
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS research_reports (
+                id TEXT PRIMARY KEY,
+                topic TEXT NOT NULL,
+                depth TEXT NOT NULL,
+                stage TEXT NOT NULL DEFAULT 'completed',
+                summary TEXT NOT NULL,
+                key_findings_json TEXT NOT NULL,
+                contradictions_json TEXT NOT NULL,
+                sources_json TEXT NOT NULL,
+                confidence_score INTEGER DEFAULT 85,
+                confidence_explanation TEXT,
+                markdown_content TEXT,
+                created_at REAL NOT NULL
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_research_reports_created ON research_reports(created_at DESC)")
+
+        # Security Audit Events & Telemetry
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS security_audit_events (
+                id TEXT PRIMARY KEY,
+                event_type TEXT NOT NULL,
+                severity TEXT NOT NULL DEFAULT 'info',
+                title TEXT NOT NULL,
+                details_json TEXT NOT NULL,
+                timestamp REAL NOT NULL
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_security_events_ts ON security_audit_events(timestamp DESC)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_crawler_queue_poll ON crawler_queue(status, priority DESC, created_at ASC)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_telemetry_provider_ts ON model_telemetry(provider_id, created_at DESC)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_agent_msg_task ON agent_messages(task_id, timestamp ASC)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_task_steps_task ON task_steps(task_id, step_index ASC)")
+
+        # Persona Settings (Angel / Devil)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS persona_settings (
+                id TEXT PRIMARY KEY,
+                persona_mode TEXT NOT NULL DEFAULT 'auto',
+                active_persona TEXT NOT NULL DEFAULT 'angel',
+                updated_at REAL NOT NULL
+            )
+        """)
 
         conn.commit()
 
@@ -2292,3 +2392,344 @@ class PlatformDB:
             """, (new_status, reviewed_by, now, rec_id))
             conn.commit()
         return PlatformDB.get_optimization_recommendation(rec_id)
+
+    # --- 13. ANVESHA Upgrades: Intelligent Browser, Tor, Security & Research PlatformDB APIs ---
+
+    @staticmethod
+    def list_browser_tabs(session_id: str = "default") -> List[Dict[str, Any]]:
+        with get_db_connection() as conn:
+            rows = conn.execute(
+                "SELECT * FROM browser_tabs WHERE session_id = ? ORDER BY position ASC, created_at ASC",
+                (session_id,)
+            ).fetchall()
+            return [dict(r) for r in rows]
+
+    @staticmethod
+    def save_browser_tab(
+        tab_id: str,
+        url: str,
+        title: str,
+        mode: str = "normal",
+        session_id: str = "default",
+        is_pinned: bool = False,
+        is_reader_mode: bool = False,
+        is_desktop_site: bool = False,
+        position: int = 0,
+    ) -> Dict[str, Any]:
+        now = time.time()
+        with get_db_connection() as conn:
+            conn.execute("""
+                INSERT OR REPLACE INTO browser_tabs (
+                    id, session_id, url, title, mode, is_pinned, is_reader_mode, is_desktop_site, position, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM browser_tabs WHERE id = ?), ?), ?)
+            """, (
+                tab_id, session_id, url, title, mode,
+                1 if is_pinned else 0,
+                1 if is_reader_mode else 0,
+                1 if is_desktop_site else 0,
+                position, tab_id, now, now
+            ))
+            conn.commit()
+            row = conn.execute("SELECT * FROM browser_tabs WHERE id = ?", (tab_id,)).fetchone()
+            return dict(row) if row else {}
+
+    @staticmethod
+    def close_browser_tab(tab_id: str) -> bool:
+        with get_db_connection() as conn:
+            cursor = conn.execute("DELETE FROM browser_tabs WHERE id = ?", (tab_id,))
+            conn.commit()
+            return cursor.rowcount > 0
+
+    @staticmethod
+    def clear_browser_tabs(session_id: str = "default", mode: Optional[str] = None) -> int:
+        with get_db_connection() as conn:
+            if mode:
+                cursor = conn.execute("DELETE FROM browser_tabs WHERE session_id = ? AND mode = ?", (session_id, mode))
+            else:
+                cursor = conn.execute("DELETE FROM browser_tabs WHERE session_id = ?", (session_id,))
+            conn.commit()
+            return cursor.rowcount
+
+    @staticmethod
+    def add_browser_history(
+        url: str,
+        title: str,
+        domain: str,
+        favicon: Optional[str] = None,
+        is_private: bool = False
+    ) -> Optional[Dict[str, Any]]:
+        # Invariant: Private/incognito visits must NEVER be logged into persistent history
+        if is_private:
+            return None
+        hid = f"bhist_{uuid.uuid4().hex[:12]}"
+        now = time.time()
+        with get_db_connection() as conn:
+            conn.execute("""
+                INSERT INTO browser_history (id, url, title, domain, favicon, visit_timestamp, is_private)
+                VALUES (?, ?, ?, ?, ?, ?, 0)
+            """, (hid, url, title, domain, favicon, now))
+            conn.commit()
+            row = conn.execute("SELECT * FROM browser_history WHERE id = ?", (hid,)).fetchone()
+            return dict(row) if row else None
+
+    @staticmethod
+    def list_browser_history(query: Optional[str] = None, limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
+        with get_db_connection() as conn:
+            if query and query.strip():
+                q = f"%{query.strip().lower()}%"
+                rows = conn.execute("""
+                    SELECT * FROM browser_history
+                    WHERE LOWER(title) LIKE ? OR LOWER(url) LIKE ? OR LOWER(domain) LIKE ?
+                    ORDER BY visit_timestamp DESC LIMIT ? OFFSET ?
+                """, (q, q, q, limit, offset)).fetchall()
+            else:
+                rows = conn.execute("""
+                    SELECT * FROM browser_history ORDER BY visit_timestamp DESC LIMIT ? OFFSET ?
+                """, (limit, offset)).fetchall()
+            return [dict(r) for r in rows]
+
+    @staticmethod
+    def delete_browser_history_item(item_id: str) -> bool:
+        with get_db_connection() as conn:
+            cursor = conn.execute("DELETE FROM browser_history WHERE id = ?", (item_id,))
+            conn.commit()
+            return cursor.rowcount > 0
+
+    @staticmethod
+    def clear_browser_history(before_ts: Optional[float] = None) -> int:
+        with get_db_connection() as conn:
+            if before_ts is not None:
+                cursor = conn.execute("DELETE FROM browser_history WHERE visit_timestamp <= ?", (before_ts,))
+            else:
+                cursor = conn.execute("DELETE FROM browser_history")
+            conn.commit()
+            return cursor.rowcount
+
+    @staticmethod
+    def list_browser_bookmarks(folder: Optional[str] = None, query: Optional[str] = None) -> List[Dict[str, Any]]:
+        with get_db_connection() as conn:
+            sql = "SELECT * FROM browser_bookmarks WHERE 1=1"
+            params = []
+            if folder:
+                sql += " AND folder = ?"
+                params.append(folder)
+            if query and query.strip():
+                sql += " AND (LOWER(title) LIKE ? OR LOWER(url) LIKE ? OR LOWER(domain) LIKE ?)"
+                q = f"%{query.strip().lower()}%"
+                params.extend([q, q, q])
+            sql += " ORDER BY created_at DESC"
+            rows = conn.execute(sql, params).fetchall()
+            return [dict(r) for r in rows]
+
+    @staticmethod
+    def add_browser_bookmark(
+        url: str,
+        title: str,
+        domain: str,
+        snippet: str = "",
+        folder: str = "General",
+        favicon: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        bid = f"bm_{uuid.uuid4().hex[:12]}"
+        now = time.time()
+        with get_db_connection() as conn:
+            conn.execute("""
+                INSERT OR REPLACE INTO browser_bookmarks (id, url, title, domain, snippet, folder, favicon, created_at)
+                VALUES (
+                    COALESCE((SELECT id FROM browser_bookmarks WHERE url = ?), ?),
+                    ?, ?, ?, ?, ?, ?,
+                    COALESCE((SELECT created_at FROM browser_bookmarks WHERE url = ?), ?)
+                )
+            """, (url, bid, url, title, domain, snippet, folder, favicon, url, now))
+            conn.commit()
+            row = conn.execute("SELECT * FROM browser_bookmarks WHERE url = ?", (url,)).fetchone()
+            return dict(row) if row else {}
+
+    @staticmethod
+    def delete_browser_bookmark(bookmark_id: str) -> bool:
+        with get_db_connection() as conn:
+            cursor = conn.execute("DELETE FROM browser_bookmarks WHERE id = ? OR url = ?", (bookmark_id, bookmark_id))
+            conn.commit()
+            return cursor.rowcount > 0
+
+    @staticmethod
+    def list_bookmark_folders() -> List[str]:
+        with get_db_connection() as conn:
+            rows = conn.execute("SELECT DISTINCT folder FROM browser_bookmarks ORDER BY folder ASC").fetchall()
+            folders = [r["folder"] for r in rows if r["folder"]]
+            if "General" not in folders:
+                folders.insert(0, "General")
+            return folders
+
+    @staticmethod
+    def save_research_report(
+        topic: str,
+        depth: str,
+        summary: str,
+        key_findings: List[str],
+        contradictions: List[str],
+        sources: List[Dict[str, Any]],
+        confidence_score: int = 85,
+        confidence_explanation: str = "",
+        markdown_content: str = "",
+        report_id: Optional[str] = None,
+        stage: str = "completed"
+    ) -> Dict[str, Any]:
+        rid = report_id or f"rep_{uuid.uuid4().hex[:12]}"
+        now = time.time()
+        with get_db_connection() as conn:
+            conn.execute("""
+                INSERT OR REPLACE INTO research_reports (
+                    id, topic, depth, stage, summary, key_findings_json, contradictions_json,
+                    sources_json, confidence_score, confidence_explanation, markdown_content, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                rid, topic, depth, stage, summary,
+                json.dumps(key_findings),
+                json.dumps(contradictions),
+                json.dumps(sources),
+                confidence_score, confidence_explanation, markdown_content, now
+            ))
+            conn.commit()
+            return PlatformDB.get_research_report(rid) or {}
+
+    @staticmethod
+    def get_research_report(report_id: str) -> Optional[Dict[str, Any]]:
+        with get_db_connection() as conn:
+            row = conn.execute("SELECT * FROM research_reports WHERE id = ?", (report_id,)).fetchone()
+            if not row:
+                return None
+            d = dict(row)
+            d["key_findings"] = json.loads(d["key_findings_json"] or "[]")
+            d["contradictions"] = json.loads(d["contradictions_json"] or "[]")
+            d["sources"] = json.loads(d["sources_json"] or "[]")
+            return d
+
+    @staticmethod
+    def list_research_reports(query: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
+        with get_db_connection() as conn:
+            if query and query.strip():
+                q = f"%{query.strip().lower()}%"
+                rows = conn.execute(
+                    "SELECT * FROM research_reports WHERE LOWER(topic) LIKE ? OR LOWER(summary) LIKE ? ORDER BY created_at DESC LIMIT ?",
+                    (q, q, limit)
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    "SELECT * FROM research_reports ORDER BY created_at DESC LIMIT ?",
+                    (limit,)
+                ).fetchall()
+            res = []
+            for r in rows:
+                d = dict(r)
+                d["key_findings"] = json.loads(d["key_findings_json"] or "[]")
+                d["contradictions"] = json.loads(d["contradictions_json"] or "[]")
+                d["sources"] = json.loads(d["sources_json"] or "[]")
+                res.append(d)
+            return res
+
+    @staticmethod
+    def delete_research_report(report_id: str) -> bool:
+        with get_db_connection() as conn:
+            cursor = conn.execute("DELETE FROM research_reports WHERE id = ?", (report_id,))
+            conn.commit()
+            return cursor.rowcount > 0
+
+    @staticmethod
+    def rename_research_report(report_id: str, new_topic: str) -> Optional[Dict[str, Any]]:
+        with get_db_connection() as conn:
+            conn.execute("UPDATE research_reports SET topic = ? WHERE id = ?", (new_topic, report_id))
+            conn.commit()
+            return PlatformDB.get_research_report(report_id)
+
+    @staticmethod
+    def log_security_event(event_type: str, severity: str, title: str, details: Dict[str, Any]) -> Dict[str, Any]:
+        eid = f"sec_{uuid.uuid4().hex[:12]}"
+        now = time.time()
+        with get_db_connection() as conn:
+            conn.execute("""
+                INSERT INTO security_audit_events (id, event_type, severity, title, details_json, timestamp)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (eid, event_type, severity, title, json.dumps(details), now))
+            conn.commit()
+            return {"id": eid, "event_type": event_type, "severity": severity, "title": title, "details": details, "timestamp": now}
+
+    @staticmethod
+    def list_security_events(limit: int = 50) -> List[Dict[str, Any]]:
+        with get_db_connection() as conn:
+            rows = conn.execute("SELECT * FROM security_audit_events ORDER BY timestamp DESC LIMIT ?", (limit,)).fetchall()
+            res = []
+            for r in rows:
+                d = dict(r)
+                d["details"] = json.loads(d["details_json"] or "{}")
+                res.append(d)
+            return res
+
+    @staticmethod
+    def get_persona_settings() -> Dict[str, Any]:
+        with get_db_connection() as conn:
+            row = conn.execute("SELECT * FROM persona_settings WHERE id = 'default'").fetchone()
+            if row:
+                return dict(row)
+            now = time.time()
+            conn.execute("""
+                INSERT INTO persona_settings (id, persona_mode, active_persona, updated_at)
+                VALUES ('default', 'auto', 'angel', ?)
+            """, (now,))
+            conn.commit()
+            return {"id": "default", "persona_mode": "auto", "active_persona": "angel", "updated_at": now}
+
+    @staticmethod
+    def update_persona_settings(persona_mode: str, active_persona: str) -> Dict[str, Any]:
+        now = time.time()
+        with get_db_connection() as conn:
+            conn.execute("""
+                INSERT OR REPLACE INTO persona_settings (id, persona_mode, active_persona, updated_at)
+                VALUES ('default', ?, ?, ?)
+            """, (persona_mode, active_persona, now))
+            conn.commit()
+            return {"id": "default", "persona_mode": persona_mode, "active_persona": active_persona, "updated_at": now}
+
+    @staticmethod
+    def execute_privacy_cleanup(
+        clear_browser_history: bool = True,
+        clear_bookmarks: bool = False,
+        clear_browser_tabs: bool = True,
+        clear_search_history: bool = False,
+        clear_cache: bool = True,
+    ) -> Dict[str, Any]:
+        """Atomically cleans selected browser privacy items."""
+        deleted_counts = {}
+        with get_db_connection() as conn:
+            if clear_browser_history:
+                c = conn.execute("DELETE FROM browser_history")
+                deleted_counts["browser_history"] = c.rowcount
+            if clear_bookmarks:
+                c = conn.execute("DELETE FROM browser_bookmarks")
+                deleted_counts["browser_bookmarks"] = c.rowcount
+            if clear_browser_tabs:
+                c = conn.execute("DELETE FROM browser_tabs")
+                deleted_counts["browser_tabs"] = c.rowcount
+            if clear_search_history:
+                c1 = conn.execute("DELETE FROM conversations")
+                c2 = conn.execute("DELETE FROM messages")
+                deleted_counts["conversations"] = c1.rowcount
+                deleted_counts["messages"] = c2.rowcount
+            conn.commit()
+
+        if clear_cache:
+            try:
+                from engine.cache_engine import search_cache, embedding_cache
+                search_cache.clear()
+                embedding_cache.clear()
+                deleted_counts["cache_entries_cleared"] = True
+            except Exception:
+                pass
+
+        PlatformDB.log_security_event(
+            event_type="privacy_cleanup",
+            severity="info",
+            title="Privacy Cleanup Executed",
+            details=deleted_counts
+        )
+        return deleted_counts

@@ -23,8 +23,8 @@ export interface ConnectionState {
   error: string | null;
 }
 
-// 5 Intelligent Search Modes
-export type SearchMode = 'auto' | 'code' | 'web' | 'deep' | 'direct';
+// Intelligent Search Modes
+export type SearchMode = 'auto' | 'code' | 'web' | 'news' | 'deep' | 'direct';
 
 export interface SearchResultItem {
   file_path: string;
@@ -94,6 +94,8 @@ export interface FileContentResponse {
 export type ActiveView =
   | 'search'
   | 'results'
+  | 'news'
+  | 'browser'
   | 'history'
   | 'web_intelligence'
   | 'web_studio'
@@ -753,4 +755,258 @@ export interface AdaptiveIntentLog {
   selected_model: string;
   user_override_layout?: string | null;
   created_at: number;
+}
+
+// ==========================================
+// ANVESHA SEARCH 2.0 INTEGRATION TYPES
+// ==========================================
+
+export type PersonaMode = 'auto' | 'force_angel' | 'force_devil';
+
+export interface PersonaProfile {
+  name: string;
+  title: string;
+  tag: string;
+  accent_color: string;
+  tone: string;
+  prompt: string;
+}
+
+export interface PersonaSettings {
+  active_mode: PersonaMode;
+  force_persona?: string | null;
+  current_resolved: 'angel' | 'devil';
+  angel_prompt_override?: string;
+  devil_prompt_override?: string;
+  profiles: {
+    angel: PersonaProfile;
+    devil: PersonaProfile;
+  };
+}
+
+export type BrowserTabMode = 'normal' | 'incognito' | 'tor';
+
+export interface BrowserTab {
+  id: string;
+  title: string;
+  url: string;
+  tab_mode: BrowserTabMode;
+  is_active: boolean;
+  favicon?: string;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface BrowserBookmark {
+  id: string;
+  title: string;
+  url: string;
+  folder: string;
+  favicon?: string;
+  created_at: number;
+}
+
+export interface BrowserHistoryItem {
+  id: string;
+  title: string;
+  url: string;
+  visit_time: number;
+  tab_mode: BrowserTabMode;
+}
+
+export interface BrowserNavigateResult {
+  action: 'navigate' | 'search';
+  resolved_url: string;
+  target_type: 'url' | 'search';
+  query?: string;
+  sanitized: boolean;
+  tracking_params_stripped: string[];
+  tor_routed: boolean;
+  error?: string;
+}
+
+export interface ReaderArticle {
+  title: string;
+  content_markdown: string;
+  content_clean_html: string;
+  excerpt: string;
+  author: string;
+  site_name: string;
+  word_count: number;
+  reading_time_minutes: number;
+  extracted_images: string[];
+  original_url: string;
+}
+
+export interface TorStatus {
+  is_available: boolean;
+  proxy_host: string;
+  proxy_port: number;
+  is_listening: boolean;
+  fail_closed_enforced: boolean;
+  ip_clearnet?: string;
+  ip_tor?: string | null;
+  message: string;
+}
+
+export interface SecurityAuditResult {
+  timestamp: number;
+  security_score: number;
+  https_enforced: boolean;
+  tor_status: TorStatus;
+  dns_leak_shield: boolean;
+  webrtc_shield: boolean;
+  tracker_blocking: {
+    enabled: boolean;
+    known_trackers_count: number;
+    blocked_count_session: number;
+  };
+  installed_extensions_count: number;
+  recommendations: string[];
+  tracker_domains_blocked_total: number;
+  safe_browsing_status: string;
+}
+
+export type ResearchDepth = 'quick' | 'deep' | 'extended';
+
+export interface ResearchContradiction {
+  source_a: string;
+  claim_a: string;
+  source_b: string;
+  claim_b: string;
+  explanation: string;
+}
+
+export interface ResearchReport {
+  id: string;
+  query: string;
+  depth: ResearchDepth;
+  title: string;
+  summary: string;
+  full_report_markdown: string;
+  sources: Array<{ title: string; url: string; snippet?: string }>;
+  contradictions: ResearchContradiction[];
+  created_at: number;
+  updated_at: number;
+}
+
+export interface CuratedExtension {
+  id: string;
+  name: string;
+  version: string;
+  sdkVersion: string;
+  description: string;
+  category: string;
+  author: string;
+  permissions: string[];
+  scriptCode: string;
+  defaultInstalled?: boolean;
+  defaultEnabled?: boolean;
+  installed?: boolean;
+  enabled?: boolean;
+}
+
+// --- Worldwide Global News Types ---
+
+export interface GlobalNewsArticle {
+  id: string;
+  title: string;
+  original_url: string;
+  source_name: string;
+  source_domain: string;
+  category: string;
+  country: string;
+  language: string;
+  published_at: string;
+  summary: string;
+  image_url?: string | null;
+  provider: 'worldpulse' | 'actually_relevant' | 'rss' | 'freshrss';
+  outlets_count: number;
+  reliability_score: number;
+  cluster_id?: string | null;
+  is_breaking?: boolean;
+  raw_metadata?: Record<string, any>;
+}
+
+export interface GlobalStoryCluster {
+  cluster_id: string;
+  title: string;
+  primary_article: GlobalNewsArticle;
+  related_articles: GlobalNewsArticle[];
+  outlets_count: number;
+  participating_sources: string[];
+  key_facts: string[];
+  conflicting_claims: string[];
+  category: string;
+  country: string;
+  language: string;
+  updated_at: string;
+}
+
+export interface GlobalNewsResponse {
+  total: number;
+  offset: number;
+  limit: number;
+  last_updated: string;
+  articles: GlobalNewsArticle[];
+  clusters: GlobalStoryCluster[];
+  breaking: GlobalNewsArticle[];
+  providers_status: string;
+}
+
+export interface GlobalNewsTrendingItem {
+  topic: string;
+  cluster_id: string;
+  category: string;
+  outlets_count: number;
+  primary_title: string;
+  url: string;
+  source_name: string;
+}
+
+export interface GlobalNewsBriefing {
+  title: string;
+  date: string;
+  summary: string;
+  key_events: Array<{
+    headline: string;
+    outlets_count: number;
+    sources: string[];
+    key_facts: string[];
+  }>;
+  sources: Array<{
+    title: string;
+    source_name: string;
+    url: string;
+  }>;
+  disclaimer: string;
+}
+
+export interface AskAIStoryResult {
+  story_id: string;
+  story_title: string;
+  answer: string;
+  verified_facts: string[];
+  conflicting_or_unconfirmed: string[];
+  sources: Array<{
+    title: string;
+    source_name: string;
+    url: string;
+  }>;
+}
+
+export interface CountryOption {
+  code: string;
+  name: string;
+  flag: string;
+}
+
+export interface LanguageOption {
+  code: string;
+  name: string;
+}
+
+export interface CategoryOption {
+  id: string;
+  name: string;
 }

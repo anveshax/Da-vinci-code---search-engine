@@ -22,6 +22,7 @@ import {
   Command,
   Sun,
   Moon,
+  Newspaper,
 } from 'lucide-react';
 import { ActiveView, SearchMode } from '../types/api';
 
@@ -37,6 +38,7 @@ interface CommandPaletteProps {
   currentTheme?: 'dark' | 'light';
   onToggleAdaptiveMode?: () => void;
   adaptiveMode?: boolean;
+  onOpenPerformance?: () => void;
 }
 
 interface PaletteAction {
@@ -61,6 +63,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   currentTheme,
   onToggleAdaptiveMode,
   adaptiveMode,
+  onOpenPerformance,
 }) => {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -77,6 +80,18 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       shortcut: 'Ctrl+Shift+N',
       handler: () => {
         onNewSearch();
+        onClose();
+      },
+    },
+    {
+      id: 'nav-global-news',
+      category: 'Navigation',
+      title: 'Global News Intelligence',
+      description: 'Free worldwide news feeds, story clusters, breaking alerts, and daily briefings',
+      icon: <Newspaper className="w-4 h-4 text-emerald-400" />,
+      shortcut: 'Alt+N',
+      handler: () => {
+        onNavigate('news');
         onClose();
       },
     },
@@ -285,6 +300,18 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     },
 
     // Preferences
+    {
+      id: 'pref-performance',
+      category: 'Preferences',
+      title: 'Performance & Speed Dashboard',
+      description: 'Live CPU, RAM, SQLite PRAGMAs, cache hit rates & bounded workers',
+      icon: <Zap className="w-4 h-4 text-cyan-400" />,
+      shortcut: 'Alt+P',
+      handler: () => {
+        if (onOpenPerformance) onOpenPerformance();
+        onClose();
+      },
+    },
     {
       id: 'pref-theme',
       category: 'Preferences',

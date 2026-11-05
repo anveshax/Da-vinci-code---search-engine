@@ -16,8 +16,12 @@ import {
   Search,
   Code2,
   Globe,
+  Mic,
+  Zap,
 } from 'lucide-react';
 import { Project, ConnectionState, ActiveView } from '../types/api';
+import { voiceService } from '../services/voiceService';
+import { PersonaIndicator } from './PersonaIndicator';
 
 interface AppHeaderProps {
   activeProject: Project | null;
@@ -26,6 +30,7 @@ interface AppHeaderProps {
   onCreateProject: (name: string) => void;
   onOpenCommandPalette: () => void;
   onOpenSettings: () => void;
+  onOpenPerformanceModal?: () => void;
   onOpenAudioModal: () => void;
   onOpenMobileMenu: () => void;
   onToggleExtensionPanel: () => void;
@@ -49,6 +54,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onCreateProject,
   onOpenCommandPalette,
   onOpenSettings,
+  onOpenPerformanceModal,
   onOpenAudioModal,
   onOpenMobileMenu,
   onToggleExtensionPanel,
@@ -254,6 +260,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           </kbd>
         </button>
 
+        {/* ANVESHA Dual Persona Indicator & Switcher */}
+        <PersonaIndicator currentTheme={currentTheme} />
+
         {/* Theme Toggle Button (Light/Dark) */}
         <button
           onClick={onToggleTheme}
@@ -308,6 +317,16 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           <Blocks className="w-4 h-4" />
         </button>
 
+        {/* Voice Assistant 3.0 Quick Trigger */}
+        <button
+          onClick={() => voiceService.openAssistant()}
+          className="p-2 rounded-full hover:bg-cyan-500/10 text-cyan-400 hover:text-cyan-300 transition-colors touch-target"
+          title="Open Voice Assistant 3.0"
+          aria-label="Voice Assistant"
+        >
+          <Mic className="w-4 h-4" />
+        </button>
+
         {/* Spatial Audio Quick Trigger Button (Hidden on mobile <sm to prevent toolbar crowding) */}
         <button
           onClick={onOpenAudioModal}
@@ -321,6 +340,18 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         >
           {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
         </button>
+
+        {/* Performance & Speed Dashboard Trigger */}
+        {onOpenPerformanceModal && (
+          <button
+            onClick={onOpenPerformanceModal}
+            className="p-2 rounded-full hover:bg-cyan-500/10 text-cyan-400 hover:text-cyan-300 transition-colors touch-target"
+            title="Performance & Speed Dashboard (Live telemetry)"
+            aria-label="Performance Dashboard"
+          >
+            <Zap className="w-4 h-4" />
+          </button>
+        )}
 
         {/* Settings Button */}
         <button

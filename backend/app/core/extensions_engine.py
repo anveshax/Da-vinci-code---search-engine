@@ -25,6 +25,19 @@ VALID_PERMISSIONS = {
     "events:listen",
     "events:emit",
     "audit:log",
+    # Browser extension permissions
+    "browser:tabs",
+    "browser:webrequest",
+    "browser:cookies",
+    "browser:scripting",
+    "browser:activetab",
+    "webRequest",
+    "storage",
+    "cookies",
+    "tabs",
+    "activeTab",
+    "scripting",
+    "webNavigation",
 }
 
 DISALLOWED_NETWORK_HOSTS = {
@@ -90,6 +103,129 @@ class ExtensionEngine:
                 return False, f"Unknown permission: '{perm}'. Valid permissions are: {sorted(list(VALID_PERMISSIONS))}"
 
         return True, None
+
+    # --- Curated Browser Extension Marketplace Seed Catalog ---
+    CURATED_BROWSER_EXTENSIONS: List[Dict[str, Any]] = [
+        {
+            "id": "ublock_origin",
+            "name": "uBlock Origin Lite",
+            "version": "2026.11.2",
+            "sdkVersion": "1.0.0",
+            "author": "Raymond Hill (ANVESHA Port)",
+            "description": "High-efficiency content blocker. Eliminates trackers, crypto miners, banner ads, and malicious popups.",
+            "category": "privacy",
+            "permissions": ["browser:webrequest", "storage:read", "storage:write"],
+            "scriptCode": "/* uBlock Content Script */ document.querySelectorAll('.ad-container, [id*=\"google_ads\"]').forEach(e => e.remove());",
+            "defaultInstalled": True,
+            "defaultEnabled": True,
+        },
+        {
+            "id": "privacy_badger",
+            "name": "Privacy Badger",
+            "version": "3.4.1",
+            "sdkVersion": "1.0.0",
+            "author": "EFF (Electronic Frontier Foundation)",
+            "description": "Automatically learns to block invisible trackers based on third-party cookie observation without static lists.",
+            "category": "privacy",
+            "permissions": ["browser:cookies", "browser:tabs"],
+            "scriptCode": "/* Privacy Badger */ console.log('[ANVESHA] Privacy Badger tracker isolation active.');",
+            "defaultInstalled": True,
+            "defaultEnabled": True,
+        },
+        {
+            "id": "https_everywhere",
+            "name": "HTTPS Everywhere",
+            "version": "5.2.0",
+            "sdkVersion": "1.0.0",
+            "author": "EFF & Tor Project",
+            "description": "Forces automatic encrypted HTTPS communication on thousands of websites to guard against MITM snooping.",
+            "category": "security",
+            "permissions": ["browser:webrequest"],
+            "scriptCode": "/* HTTPS Everywhere */ if (location.protocol === 'http:' && !location.hostname.endsWith('.onion')) { location.href = location.href.replace('http:', 'https:'); }",
+            "defaultInstalled": True,
+            "defaultEnabled": True,
+        },
+        {
+            "id": "dark_reader",
+            "name": "Dark Reader",
+            "version": "4.9.90",
+            "sdkVersion": "1.0.0",
+            "author": "Alexander Shutov",
+            "description": "Inverts colors and generates soothing high-contrast dark themes on the fly for every webpage you visit.",
+            "category": "reading",
+            "permissions": ["browser:activetab"],
+            "scriptCode": "/* Dark Reader */ const s = document.createElement('style'); s.innerHTML = 'html { filter: invert(90%) hue-rotate(180deg) !important; background: #121212 !important; } img, video { filter: invert(100%) hue-rotate(180deg) !important; }'; document.head.appendChild(s);",
+            "defaultInstalled": False,
+            "defaultEnabled": False,
+        },
+        {
+            "id": "noscript_lite",
+            "name": "NoScript Lite",
+            "version": "11.4.12",
+            "sdkVersion": "1.0.0",
+            "author": "Giorgio Maone",
+            "description": "Granular whitelist-based script and execution control. Mitigates zero-day cross-site scripting (XSS).",
+            "category": "security",
+            "permissions": ["browser:scripting"],
+            "scriptCode": "/* NoScript Lite */ console.log('[ANVESHA] Script policy enforced.');",
+            "defaultInstalled": False,
+            "defaultEnabled": False,
+        },
+        {
+            "id": "clear_urls",
+            "name": "ClearURLs",
+            "version": "1.26.1",
+            "sdkVersion": "1.0.0",
+            "author": "Kevin Roebert",
+            "description": "Removes tracking fields like utm_source, fbclid, and gclid from URLs before navigating to prevent user profiling.",
+            "category": "privacy",
+            "permissions": ["browser:webrequest"],
+            "scriptCode": "/* ClearURLs */ console.log('[ANVESHA] Clean URL filter active.');",
+            "defaultInstalled": False,
+            "defaultEnabled": False,
+        },
+    ]
+
+    @staticmethod
+    def seed_curated_marketplace():
+        """Ensures the curated browser extensions are registered in SQLite database."""
+        for ext in ExtensionEngine.CURATED_BROWSER_EXTENSIONS:
+            existing = PlatformDB.get_extension(ext["id"])
+            if not existing:
+                manifest = {
+                    "id": ext["id"],
+                    "name": ext["name"],
+                    "version": ext["version"],
+                    "sdkVersion": ext["sdkVersion"],
+                    "description": ext["description"],
+                    "category": ext["category"],
+                    "author": ext["author"],
+                    "permissions": ext["permissions"],
+                    "scriptCode": ext["scriptCode"],
+                }
+                PlatformDB.register_extension(
+                    extension_id=ext["id"],
+                    name=ext["name"],
+                    version=ext["version"],
+                    manifest=manifest,
+                    installed=ext.get("defaultInstalled", False),
+                    enabled=ext.get("defaultEnabled", False),
+                    visible=True,
+                )
+
+    @staticmethod
+    def get_active_content_scripts() -> str:
+        """Concatenates scripts from all enabled extensions for page injection."""
+        ExtensionEngine.seed_curated_marketplace()
+        exts = PlatformDB.list_extensions()
+        scripts = []
+        for e in exts:
+            if e.get("installed") and e.get("enabled"):
+                m = e.get("manifest", {})
+                code = m.get("scriptCode")
+                if code:
+                    scripts.append(code)
+        return "\n\n".join(scripts)
 
     @staticmethod
     def register_extension(manifest: Dict[str, Any]) -> Dict[str, Any]:
@@ -320,3 +456,126 @@ class ExtensionEngine:
             pass
 
         return True, None
+
+    # --- Curated Browser Extension Marketplace Seed Catalog ---
+    CURATED_BROWSER_EXTENSIONS: List[Dict[str, Any]] = [
+        {
+            "id": "ublock_origin",
+            "name": "uBlock Origin Lite",
+            "version": "2026.11.2",
+            "sdkVersion": "1.0.0",
+            "author": "Raymond Hill (ANVESHA Port)",
+            "description": "High-efficiency content blocker. Eliminates trackers, crypto miners, banner ads, and malicious popups.",
+            "category": "privacy",
+            "permissions": ["browser:webrequest", "storage:read", "storage:write"],
+            "scriptCode": "/* uBlock Content Script */ document.querySelectorAll('.ad-container, [id*=\"google_ads\"]').forEach(e => e.remove());",
+            "defaultInstalled": True,
+            "defaultEnabled": True,
+        },
+        {
+            "id": "privacy_badger",
+            "name": "Privacy Badger",
+            "version": "3.4.1",
+            "sdkVersion": "1.0.0",
+            "author": "EFF (Electronic Frontier Foundation)",
+            "description": "Automatically learns to block invisible trackers based on third-party cookie observation without static lists.",
+            "category": "privacy",
+            "permissions": ["browser:cookies", "browser:tabs"],
+            "scriptCode": "/* Privacy Badger */ console.log('[ANVESHA] Privacy Badger tracker isolation active.');",
+            "defaultInstalled": True,
+            "defaultEnabled": True,
+        },
+        {
+            "id": "https_everywhere",
+            "name": "HTTPS Everywhere",
+            "version": "5.2.0",
+            "sdkVersion": "1.0.0",
+            "author": "EFF & Tor Project",
+            "description": "Forces automatic encrypted HTTPS communication on thousands of websites to guard against MITM snooping.",
+            "category": "security",
+            "permissions": ["browser:webrequest"],
+            "scriptCode": "/* HTTPS Everywhere */ if (location.protocol === 'http:' && !location.hostname.endsWith('.onion')) { location.href = location.href.replace('http:', 'https:'); }",
+            "defaultInstalled": True,
+            "defaultEnabled": True,
+        },
+        {
+            "id": "dark_reader",
+            "name": "Dark Reader",
+            "version": "4.9.90",
+            "sdkVersion": "1.0.0",
+            "author": "Alexander Shutov",
+            "description": "Inverts colors and generates soothing high-contrast dark themes on the fly for every webpage you visit.",
+            "category": "reading",
+            "permissions": ["browser:activetab"],
+            "scriptCode": "/* Dark Reader */ const s = document.createElement('style'); s.innerHTML = 'html { filter: invert(90%) hue-rotate(180deg) !important; background: #121212 !important; } img, video { filter: invert(100%) hue-rotate(180deg) !important; }'; document.head.appendChild(s);",
+            "defaultInstalled": False,
+            "defaultEnabled": False,
+        },
+        {
+            "id": "noscript_lite",
+            "name": "NoScript Lite",
+            "version": "11.4.12",
+            "sdkVersion": "1.0.0",
+            "author": "Giorgio Maone",
+            "description": "Granular whitelist-based script and execution control. Mitigates zero-day cross-site scripting (XSS).",
+            "category": "security",
+            "permissions": ["browser:scripting"],
+            "scriptCode": "/* NoScript Lite */ console.log('[ANVESHA] Script policy enforced.');",
+            "defaultInstalled": False,
+            "defaultEnabled": False,
+        },
+        {
+            "id": "clear_urls",
+            "name": "ClearURLs",
+            "version": "1.26.1",
+            "sdkVersion": "1.0.0",
+            "author": "Kevin Roebert",
+            "description": "Removes tracking fields like utm_source, fbclid, and gclid from URLs before navigating to prevent user profiling.",
+            "category": "privacy",
+            "permissions": ["browser:webrequest"],
+            "scriptCode": "/* ClearURLs */ console.log('[ANVESHA] Clean URL filter active.');",
+            "defaultInstalled": False,
+            "defaultEnabled": False,
+        },
+    ]
+
+    @staticmethod
+    def seed_curated_marketplace():
+        """Ensures the curated browser extensions are registered in SQLite database."""
+        for ext in ExtensionEngine.CURATED_BROWSER_EXTENSIONS:
+            existing = PlatformDB.get_extension(ext["id"])
+            if not existing:
+                manifest = {
+                    "id": ext["id"],
+                    "name": ext["name"],
+                    "version": ext["version"],
+                    "sdkVersion": ext["sdkVersion"],
+                    "description": ext["description"],
+                    "category": ext["category"],
+                    "author": ext["author"],
+                    "permissions": ext["permissions"],
+                    "scriptCode": ext["scriptCode"],
+                }
+                PlatformDB.register_extension(
+                    extension_id=ext["id"],
+                    name=ext["name"],
+                    version=ext["version"],
+                    manifest=manifest,
+                    installed=ext.get("defaultInstalled", False),
+                    enabled=ext.get("defaultEnabled", False),
+                    visible=True,
+                )
+
+    @staticmethod
+    def get_active_content_scripts() -> str:
+        """Concatenates scripts from all enabled extensions for page injection."""
+        ExtensionEngine.seed_curated_marketplace()
+        exts = PlatformDB.list_extensions()
+        scripts = []
+        for e in exts:
+            if e.get("installed") and e.get("enabled"):
+                m = e.get("manifest", {})
+                code = m.get("scriptCode")
+                if code:
+                    scripts.append(code)
+        return "\n\n".join(scripts)

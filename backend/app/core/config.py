@@ -3,15 +3,14 @@ from pathlib import Path
 from typing import List
 from dotenv import load_dotenv
 
-# Automatically load backend/.env and root .env
+# Automatically load both root .env and backend/.env so configured keys are always loaded
 _backend_env = Path(__file__).resolve().parents[2] / ".env"
 _root_env = Path(__file__).resolve().parents[3] / ".env"
+if _root_env.exists():
+    load_dotenv(dotenv_path=_root_env, override=False)
 if _backend_env.exists():
-    load_dotenv(dotenv_path=_backend_env)
-elif _root_env.exists():
-    load_dotenv(dotenv_path=_root_env)
-else:
-    load_dotenv()
+    load_dotenv(dotenv_path=_backend_env, override=False)
+load_dotenv()
 
 class Settings:
     PROJECT_NAME: str = "Codebase Intelligence Engine API"
@@ -19,9 +18,10 @@ class Settings:
     API_PREFIX: str = "/api"
     API_V2_PREFIX: str = "/api/v2"
 
-    # AI Provider Settings (Groq, OpenRouter, OpenAI-compatible)
+    # AI Provider Settings (Groq, OpenRouter, OpenAI-compatible, Gemini)
     AI_PROVIDER: str = os.getenv("AI_PROVIDER", "groq").lower()
     AI_API_KEY: str = os.getenv("AI_API_KEY", "").strip()
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "").strip()
     AI_BASE_URL: str = os.getenv("AI_BASE_URL", "").strip()
     AI_PRIMARY_MODEL: str = os.getenv("AI_PRIMARY_MODEL", "").strip()
 
@@ -46,6 +46,16 @@ class Settings:
     ENABLE_FIRECRAWL: bool = os.getenv("ENABLE_FIRECRAWL", "true").lower() in ("true", "1", "yes")
     ENABLE_GOOGLE_MAPS: bool = os.getenv("ENABLE_GOOGLE_MAPS", "true").lower() in ("true", "1", "yes")
     ENABLE_GROQ: bool = os.getenv("ENABLE_GROQ", "true").lower() in ("true", "1", "yes")
+
+    # Fully Local AI Search & Offline Infrastructure (Ollama)
+    LOCAL_AI_ENABLED: bool = os.getenv("LOCAL_AI_ENABLED", "true").lower() in ("true", "1", "yes")
+    LOCAL_AI_STRICT_MODE: bool = os.getenv("LOCAL_AI_STRICT_MODE", "false").lower() in ("true", "1", "yes")
+    OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
+    OLLAMA_LLM_MODEL: str = os.getenv("OLLAMA_LLM_MODEL", "llama3").strip()
+    OLLAMA_EMBED_MODEL: str = os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text").strip()
+    OLLAMA_TIMEOUT: float = float(os.getenv("OLLAMA_TIMEOUT", "180.0"))
+    OLLAMA_KEEP_ALIVE: str = os.getenv("OLLAMA_KEEP_ALIVE", "5m").strip()
+    EMBEDDING_PROVIDER: str = os.getenv("EMBEDDING_PROVIDER", "gemini").lower().strip()
 
     # Base workspace directory (configurable via env, defaults to project root)
     WORKSPACE_ROOT: str = os.getenv("WORKSPACE_ROOT", str(Path(__file__).resolve().parents[3]))

@@ -1,27 +1,48 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import { Sparkles, Undo2, X } from 'lucide-react';
 import { AppSidebar } from './components/AppSidebar';
 import { AppHeader } from './components/AppHeader';
-import { CommandPalette } from './components/CommandPalette';
-import { SettingsModal } from './components/SettingsModal';
-import { PromptLibraryModal } from './components/PromptLibraryModal';
-import { ModelCompareModal } from './components/ModelCompareModal';
-import { AudioHapticControlsModal } from './components/AudioHapticControlsModal';
 import { SearchHomepage } from './components/SearchHomepage';
-import { SearchResultsView } from './components/SearchResultsView';
-import { CodebaseExplorerView } from './components/CodebaseExplorerView';
-import { DeepResearchWorkspace } from './components/DeepResearchWorkspace';
-import { DebuggingAssistantView } from './components/DebuggingAssistantView';
-import { ArtifactsWorkspace } from './components/ArtifactsWorkspace';
-import { CodebaseToolsPanel } from './components/CodebaseToolsPanel';
-import { FileViewerModal } from './components/FileViewerModal';
-import { ExtensionSidePanel } from './components/ExtensionSidePanel';
-import { MultiAgentWorkspace } from './components/MultiAgentWorkspace';
-import { GovernanceConsole } from './components/GovernanceConsole';
-import { WebDevStudioView } from './components/WebDevStudioView';
-import { WebIntelligenceView } from './components/WebIntelligenceView';
-import { HistoryView } from './components/HistoryView';
 import { ErrorBoundary } from './components/ErrorBoundary';
+
+// Lazy-loaded secondary views and workspaces for optimal initial bundle & fast TTI
+const SearchResultsView = lazy(() => import('./components/SearchResultsView').then((m) => ({ default: m.SearchResultsView })));
+const HistoryView = lazy(() => import('./components/HistoryView').then((m) => ({ default: m.HistoryView })));
+const BrowserWorkspace = lazy(() => import('./components/BrowserWorkspace').then((m) => ({ default: m.BrowserWorkspace })));
+const SecurityCenterView = lazy(() => import('./components/SecurityCenterView').then((m) => ({ default: m.SecurityCenterView })));
+const ExtensionMarketplaceView = lazy(() => import('./components/ExtensionMarketplaceView').then((m) => ({ default: m.ExtensionMarketplaceView })));
+const BookmarksView = lazy(() => import('./components/BookmarksView').then((m) => ({ default: m.BookmarksView })));
+const DeepResearchWorkspace = lazy(() => import('./components/DeepResearchWorkspace').then((m) => ({ default: m.DeepResearchWorkspace })));
+const CodebaseExplorerView = lazy(() => import('./components/CodebaseExplorerView').then((m) => ({ default: m.CodebaseExplorerView })));
+const WebDevStudioView = lazy(() => import('./components/WebDevStudioView').then((m) => ({ default: m.WebDevStudioView })));
+const WebIntelligenceView = lazy(() => import('./components/WebIntelligenceView').then((m) => ({ default: m.WebIntelligenceView })));
+const GlobalNewsView = lazy(() => import('./components/GlobalNewsView').then((m) => ({ default: m.GlobalNewsView })));
+const MultiAgentWorkspace = lazy(() => import('./components/MultiAgentWorkspace').then((m) => ({ default: m.MultiAgentWorkspace })));
+const GovernanceConsole = lazy(() => import('./components/GovernanceConsole').then((m) => ({ default: m.GovernanceConsole })));
+const DebuggingAssistantView = lazy(() => import('./components/DebuggingAssistantView').then((m) => ({ default: m.DebuggingAssistantView })));
+const ArtifactsWorkspace = lazy(() => import('./components/ArtifactsWorkspace').then((m) => ({ default: m.ArtifactsWorkspace })));
+const CodebaseToolsPanel = lazy(() => import('./components/CodebaseToolsPanel').then((m) => ({ default: m.CodebaseToolsPanel })));
+
+// Lazy-loaded modals & drawers (only loaded when invoked)
+const CommandPalette = lazy(() => import('./components/CommandPalette').then((m) => ({ default: m.CommandPalette })));
+const SettingsModal = lazy(() => import('./components/SettingsModal').then((m) => ({ default: m.SettingsModal })));
+const PromptLibraryModal = lazy(() => import('./components/PromptLibraryModal').then((m) => ({ default: m.PromptLibraryModal })));
+const ModelCompareModal = lazy(() => import('./components/ModelCompareModal').then((m) => ({ default: m.ModelCompareModal })));
+const AudioHapticControlsModal = lazy(() => import('./components/AudioHapticControlsModal').then((m) => ({ default: m.AudioHapticControlsModal })));
+const FileViewerModal = lazy(() => import('./components/FileViewerModal').then((m) => ({ default: m.FileViewerModal })));
+const ExtensionSidePanel = lazy(() => import('./components/ExtensionSidePanel').then((m) => ({ default: m.ExtensionSidePanel })));
+const VoiceAssistant = lazy(() => import('./components/voice/VoiceAssistant').then((m) => ({ default: m.VoiceAssistant })));
+const VoiceSearchModal = lazy(() => import('./components/VoiceSearchModal').then((m) => ({ default: m.VoiceSearchModal })));
+const PerformanceDashboardModal = lazy(() => import('./components/PerformanceDashboardModal').then((m) => ({ default: m.PerformanceDashboardModal })));
+
+const ViewFallback: React.FC = () => (
+  <div className="flex-1 flex items-center justify-center p-8 bg-[#050508] text-slate-400 font-mono text-xs">
+    <div className="flex items-center gap-2">
+      <div className="w-3.5 h-3.5 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin" />
+      <span>Loading workspace...</span>
+    </div>
+  </div>
+);
 import {
   checkBackendHealth,
   searchCodebase,
@@ -120,6 +141,9 @@ export const App: React.FC = () => {
   const [isPromptLibraryOpen, setIsPromptLibraryOpen] = useState<boolean>(false);
   const [isModelCompareOpen, setIsModelCompareOpen] = useState<boolean>(false);
   const [isAudioModalOpen, setIsAudioModalOpen] = useState<boolean>(false);
+  const [isVoiceSearchModalOpen, setIsVoiceSearchModalOpen] = useState<boolean>(false);
+  const [isPerformanceModalOpen, setIsPerformanceModalOpen] = useState<boolean>(false);
+  const [browserTargetUrl, setBrowserTargetUrl] = useState<string | undefined>(undefined);
   const [inspectFilePath, setInspectFilePath] = useState<{ path: string; line: number } | null>(null);
 
   // Audio settings
@@ -202,12 +226,17 @@ export const App: React.FC = () => {
       } else if (e.altKey && e.key === '5') {
         e.preventDefault();
         setCurrentView('governance');
+      } else if (e.altKey && (e.key === 'p' || e.key === 'P')) {
+        e.preventDefault();
+        setIsPerformanceModalOpen((prev) => !prev);
       } else if (e.key === 'Escape') {
         setIsCommandPaletteOpen(false);
         setIsSettingsModalOpen(false);
         setIsPromptLibraryOpen(false);
         setIsModelCompareOpen(false);
         setIsAudioModalOpen(false);
+        setIsPerformanceModalOpen(false);
+        setIsVoiceSearchModalOpen(false);
         setInspectFilePath(null);
         setAdaptiveToast(null);
       }
@@ -465,6 +494,7 @@ export const App: React.FC = () => {
             onCreateProject={handleCreateProject}
             onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
             onOpenSettings={() => setIsSettingsModalOpen(true)}
+            onOpenPerformanceModal={() => setIsPerformanceModalOpen(true)}
             onOpenAudioModal={() => setIsAudioModalOpen(true)}
             onOpenMobileMenu={() => setIsMobileNavOpen(true)}
             onToggleExtensionPanel={() => {
@@ -517,170 +547,239 @@ export const App: React.FC = () => {
         {/* Central Workspace Canvas */}
         <main className="flex-1 min-h-0 overflow-hidden relative flex flex-col">
           <ErrorBoundary onReset={handleNewSearch} fallbackTitle="Search Workspace Recovered">
-            {/* View 1: Search Homepage with live 3D Earth Globe (No redundant TopBar) */}
+            {/* View 1: Search Homepage with live 3D Earth Globe (Instant Above-the-Fold Render) */}
             {currentView === 'search' && (
-            <SearchHomepage
-              onSearch={handleExecuteSearch}
-              isSearching={isSearching}
-              onOpenDashboard={() => setCurrentView('explorer')}
-              workspacePath={activeProject?.workspace_root || connection.data?.telemetry.workspace_root}
-              hideTopBar={true}
-            />
-          )}
-
-          {/* View 1.5: Unified Activity & History (Google History Inspired) */}
-          {currentView === 'history' && (
-            <HistoryView
-              conversations={conversations}
-              activeConversationId={activeConversationId}
-              onSelectConversation={handleSelectConversation}
-              onDeleteConversation={handleDeleteConversation}
-              onRenameConversation={handleRenameConversation}
-              onTogglePinConversation={handleTogglePinConversation}
-              onClearAllHistory={handleClearAllHistory}
-              onNewSearch={handleNewSearch}
-            />
-          )}
-
-          {/* View 2: Search Results & AI Answer View (Smooth Flex Scrolling) */}
-          {currentView === 'results' && searchData && (
-            <SearchResultsView
-              searchData={searchData}
-              activeConversationId={activeConversationId}
-              onBackToSearch={handleNewSearch}
-              onNewSearch={handleExecuteSearch}
-              onOpenSettings={() => setIsSettingsModalOpen(true)}
-              onConversationCreated={handleConversationCreatedOrUpdated}
-            />
-          )}
-
-          {/* View 2.5: Web Intelligence, Crawling & Indexing Infrastructure */}
-          {currentView === 'web_intelligence' && <WebIntelligenceView />}
-
-          {/* View 3: Web Development & UI Engineering Workspace */}
-          {currentView === 'web_studio' && (
-            <WebDevStudioView
-              projectId={activeProject?.id || 'default'}
-              onNavigateHome={() => setCurrentView('search')}
-            />
-          )}
-
-          {/* View 3: Multi-Agent AI Governance Workspace */}
-          {currentView === 'multi_agent' && (
-            <MultiAgentWorkspace
-              projectId={activeProject?.id || 'default'}
-              onNavigateHome={() => setCurrentView('search')}
-            />
-          )}
-
-          {/* View 4: Central Governance Console, Model Router & Self-Optimization */}
-          {currentView === 'governance' && (
-            <GovernanceConsole
-              projectId={activeProject?.id || 'default'}
-            />
-          )}
-
-          {/* View 5: Codebase Explorer Tree & Preview */}
-          {currentView === 'explorer' && <CodebaseExplorerView />}
-
-          {/* View 6: Deep Research Studio */}
-          {currentView === 'deep_research' && <DeepResearchWorkspace />}
-
-          {/* View 7: Debugging Assistant */}
-          {currentView === 'debugging' && <DebuggingAssistantView />}
-
-          {/* View 8: Saved Artifacts Workspace */}
-          {currentView === 'artifacts' && <ArtifactsWorkspace />}
-
-          {/* Views 9-12: Codebase Diagnostics Panel */}
-          {(currentView === 'dependencies' ||
-            currentView === 'impact' ||
-            currentView === 'test_gaps' ||
-            currentView === 'security') && (
-            <div className="flex-1 p-3.5 sm:p-6 pb-safe overflow-y-auto max-w-5xl mx-auto w-full">
-              <CodebaseToolsPanel
-                onOpenFile={(path, line) => setInspectFilePath({ path, line: line || 1 })}
+              <SearchHomepage
+                onSearch={handleExecuteSearch}
+                isSearching={isSearching}
+                onOpenDashboard={() => setCurrentView('explorer')}
+                workspacePath={activeProject?.workspace_root || connection.data?.telemetry.workspace_root}
+                hideTopBar={true}
               />
-            </div>
-          )}
+            )}
+
+            {/* Suspense Boundary for Lazy-Loaded Secondary Workspaces */}
+            <Suspense fallback={<ViewFallback />}>
+              {/* View 1.5: Unified Activity & History (Google History Inspired) */}
+              {currentView === 'history' && (
+                <HistoryView
+                  conversations={conversations}
+                  activeConversationId={activeConversationId}
+                  onSelectConversation={handleSelectConversation}
+                  onDeleteConversation={handleDeleteConversation}
+                  onRenameConversation={handleRenameConversation}
+                  onTogglePinConversation={handleTogglePinConversation}
+                  onClearAllHistory={handleClearAllHistory}
+                  onNewSearch={handleNewSearch}
+                />
+              )}
+
+              {/* View 2: Search Results & AI Answer View (Smooth Flex Scrolling) */}
+              {currentView === 'results' && searchData && (
+                <SearchResultsView
+                  searchData={searchData}
+                  activeConversationId={activeConversationId}
+                  onBackToSearch={handleNewSearch}
+                  onNewSearch={handleExecuteSearch}
+                  onOpenSettings={() => setIsSettingsModalOpen(true)}
+                  onConversationCreated={handleConversationCreatedOrUpdated}
+                  onNavigateToNews={() => setCurrentView('news')}
+                />
+              )}
+
+              {/* View 2.2: Worldwide Global News Intelligence Platform */}
+              {currentView === 'news' && <GlobalNewsView />}
+
+              {/* View 2.5: Web Intelligence, Crawling & Indexing Infrastructure */}
+              {currentView === 'web_intelligence' && <WebIntelligenceView />}
+
+              {/* View 3: Web Development & UI Engineering Workspace */}
+              {currentView === 'web_studio' && (
+                <WebDevStudioView
+                  projectId={activeProject?.id || 'default'}
+                  onNavigateHome={() => setCurrentView('search')}
+                />
+              )}
+
+              {/* View 3: Multi-Agent AI Governance Workspace */}
+              {currentView === 'multi_agent' && (
+                <MultiAgentWorkspace
+                  projectId={activeProject?.id || 'default'}
+                  onNavigateHome={() => setCurrentView('search')}
+                />
+              )}
+
+              {/* View 4: Central Governance Console, Model Router & Self-Optimization */}
+              {currentView === 'governance' && (
+                <GovernanceConsole
+                  projectId={activeProject?.id || 'default'}
+                />
+              )}
+
+              {/* View 5: Codebase Explorer Tree & Preview */}
+              {currentView === 'explorer' && <CodebaseExplorerView />}
+
+              {/* View 6: Deep Research Studio */}
+              {currentView === 'deep_research' && <DeepResearchWorkspace />}
+
+              {/* View 7: Debugging Assistant */}
+              {currentView === 'debugging' && <DebuggingAssistantView />}
+
+              {/* View 8: Saved Artifacts Workspace */}
+              {currentView === 'artifacts' && <ArtifactsWorkspace />}
+
+              {/* View 9: Intelligent Web Browser Workspace */}
+              {currentView === 'browser' && (
+                <BrowserWorkspace
+                  initialUrl={browserTargetUrl}
+                  onPerformSearch={handleExecuteSearch}
+                />
+              )}
+
+              {/* View 10: Security & Privacy Center */}
+              {currentView === 'security' && <SecurityCenterView />}
+
+              {/* View 11: Curated Extensions Marketplace */}
+              {currentView === 'extensions' && <ExtensionMarketplaceView />}
+
+              {/* View 12: Bookmarks & Folder Taxonomy */}
+              {currentView === 'bookmarks' && (
+                <BookmarksView
+                  onOpenUrl={(url: string) => {
+                    setBrowserTargetUrl(url);
+                    setCurrentView('browser');
+                  }}
+                />
+              )}
+
+              {/* View 13: Codebase Diagnostics Panel */}
+              {(currentView === 'dependencies' ||
+                currentView === 'impact' ||
+                currentView === 'test_gaps') && (
+                <div className="flex-1 p-3.5 sm:p-6 pb-safe overflow-y-auto max-w-5xl mx-auto w-full">
+                  <CodebaseToolsPanel
+                    onOpenFile={(path, line) => setInspectFilePath({ path, line: line || 1 })}
+                  />
+                </div>
+              )}
+            </Suspense>
           </ErrorBoundary>
         </main>
       </div>
 
-      {/* Global Command Palette Modal (Ctrl+K) */}
-      <CommandPalette
-        isOpen={isCommandPaletteOpen}
-        onClose={() => setIsCommandPaletteOpen(false)}
-        onNavigate={(view) => {
-          if (view === 'prompts') {
-            setIsPromptLibraryOpen(true);
-          } else if (view === 'settings') {
-            setIsSettingsModalOpen(true);
-          } else {
-            setCurrentView(view);
-          }
-        }}
-        onSetMode={(mode) => {
-          if (searchData?.query) {
-            handleExecuteSearch(searchData.query, mode);
-          }
-        }}
-        onNewSearch={handleNewSearch}
-        onToggleSound={() => audioService.toggleSound()}
-        soundEnabled={audioSettings.soundEnabled}
-        onToggleTheme={handleToggleTheme}
-        currentTheme={currentTheme}
-        onToggleAdaptiveMode={() => setAdaptiveMode((p) => !p)}
-        adaptiveMode={adaptiveMode}
-      />
+      {/* Lazy Modals & Drawers Suspense Boundary */}
+      <Suspense fallback={null}>
+        {/* Global Command Palette Modal (Ctrl+K) */}
+        {isCommandPaletteOpen && (
+          <CommandPalette
+            isOpen={isCommandPaletteOpen}
+            onClose={() => setIsCommandPaletteOpen(false)}
+            onNavigate={(view) => {
+              if (view === 'prompts') {
+                setIsPromptLibraryOpen(true);
+              } else if (view === 'settings') {
+                setIsSettingsModalOpen(true);
+              } else {
+                setCurrentView(view);
+              }
+            }}
+            onSetMode={(mode) => {
+              if (searchData?.query) {
+                handleExecuteSearch(searchData.query, mode);
+              }
+            }}
+            onNewSearch={handleNewSearch}
+            onToggleSound={() => audioService.toggleSound()}
+            soundEnabled={audioSettings.soundEnabled}
+            onToggleTheme={handleToggleTheme}
+            currentTheme={currentTheme}
+            onToggleAdaptiveMode={() => setAdaptiveMode((p) => !p)}
+            adaptiveMode={adaptiveMode}
+            onOpenPerformance={() => setIsPerformanceModalOpen(true)}
+          />
+        )}
 
-      {/* Platform Settings Modal */}
-      <SettingsModal
-        isOpen={isSettingsModalOpen}
-        onClose={() => setIsSettingsModalOpen(false)}
-        connection={connection}
-      />
+        {/* Platform Settings Modal */}
+        {isSettingsModalOpen && (
+          <SettingsModal
+            isOpen={isSettingsModalOpen}
+            onClose={() => setIsSettingsModalOpen(false)}
+            connection={connection}
+          />
+        )}
 
-      {/* Prompt Library Modal */}
-      <PromptLibraryModal
-        isOpen={isPromptLibraryOpen}
-        onClose={() => setIsPromptLibraryOpen(false)}
-        onSelectPrompt={(promptText) => {
-          handleExecuteSearch(promptText, 'auto');
-        }}
-      />
+        {/* Prompt Library Modal */}
+        {isPromptLibraryOpen && (
+          <PromptLibraryModal
+            isOpen={isPromptLibraryOpen}
+            onClose={() => setIsPromptLibraryOpen(false)}
+            onSelectPrompt={(promptText) => {
+              handleExecuteSearch(promptText, 'auto');
+            }}
+          />
+        )}
 
-      {/* Model Compare Modal */}
-      <ModelCompareModal
-        isOpen={isModelCompareOpen}
-        onClose={() => setIsModelCompareOpen(false)}
-        initialQuery={searchData?.query || ''}
-      />
+        {/* Model Compare Modal */}
+        {isModelCompareOpen && (
+          <ModelCompareModal
+            isOpen={isModelCompareOpen}
+            onClose={() => setIsModelCompareOpen(false)}
+            initialQuery={searchData?.query || ''}
+          />
+        )}
 
-      {/* Audio & Haptic Controls Modal */}
-      <AudioHapticControlsModal
-        isOpen={isAudioModalOpen}
-        onClose={() => setIsAudioModalOpen(false)}
-        settings={audioSettings}
-        onUpdateSettings={(partial) => audioService.updateSettings(partial)}
-      />
+        {/* Audio & Haptic Controls Modal */}
+        {isAudioModalOpen && (
+          <AudioHapticControlsModal
+            isOpen={isAudioModalOpen}
+            onClose={() => setIsAudioModalOpen(false)}
+            settings={audioSettings}
+            onUpdateSettings={(partial) => audioService.updateSettings(partial)}
+          />
+        )}
 
-      {/* File Inspector Modal */}
-      {inspectFilePath && (
-        <FileViewerModal
-          filePath={inspectFilePath.path}
-          targetLineNumber={inspectFilePath.line}
-          onClose={() => setInspectFilePath(null)}
+        {/* File Inspector Modal */}
+        {inspectFilePath && (
+          <FileViewerModal
+            filePath={inspectFilePath.path}
+            targetLineNumber={inspectFilePath.line}
+            onClose={() => setInspectFilePath(null)}
+          />
+        )}
+
+        {/* Extension Platform Drawer & Minimized Dock */}
+        <ExtensionSidePanel
+          isOpen={isExtensionPanelOpen}
+          isMinimized={isExtensionPanelMinimized}
+          onClose={() => setIsExtensionPanelOpen(false)}
+          onToggleMinimize={() => setIsExtensionPanelMinimized((prev) => !prev)}
         />
-      )}
 
-      {/* Extension Platform Drawer & Minimized Dock */}
-      <ExtensionSidePanel
-        isOpen={isExtensionPanelOpen}
-        isMinimized={isExtensionPanelMinimized}
-        onClose={() => setIsExtensionPanelOpen(false)}
-        onToggleMinimize={() => setIsExtensionPanelMinimized((prev) => !prev)}
-      />
+        {/* ANVESHA Voice Search Modal */}
+        {isVoiceSearchModalOpen && (
+          <VoiceSearchModal
+            isOpen={isVoiceSearchModalOpen}
+            onClose={() => setIsVoiceSearchModalOpen(false)}
+            onSearch={(query: string) => handleExecuteSearch(query, 'auto')}
+          />
+        )}
+
+        {/* ANVESHA Performance & Speed Dashboard Modal */}
+        {isPerformanceModalOpen && (
+          <PerformanceDashboardModal
+            isOpen={isPerformanceModalOpen}
+            onClose={() => setIsPerformanceModalOpen(false)}
+          />
+        )}
+
+        {/* ANVESHA Voice Engine 3.0 Companion */}
+        <VoiceAssistant
+          onNavigateView={(view) => setCurrentView(view as ActiveView)}
+          onSearchQuery={(query: string) => handleExecuteSearch(query, 'auto')}
+          onToggleTheme={handleToggleTheme}
+          currentTheme={currentTheme}
+        />
+      </Suspense>
     </div>
   );
 };

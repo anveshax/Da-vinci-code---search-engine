@@ -18,8 +18,14 @@ import {
   AlertTriangle,
   Blocks,
   ChevronRight,
+  Mic,
+  Compass,
+  Bookmark,
+  ShieldCheck,
+  Newspaper,
 } from 'lucide-react';
 import { ActiveView, Conversation, Project } from '../types/api';
+import { voiceService } from '../services/voiceService';
 
 interface AppSidebarProps {
   currentView: ActiveView;
@@ -220,25 +226,32 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
     handleClose();
   };
 
-  // Complete Google-style minimal navigation items list matching user requirements:
-  // AI Search, History, Web Intelligence, Web Studio, Projects, Codebase Intelligence, Extensions, Settings
+  // Minimal Google-style navigation items list matching ANVESHA Search 2.0 integration:
   const navItems = [
     { id: 'search', label: 'AI Search', icon: <Search className="w-4 h-4 text-cyan-400" /> },
+    { id: 'news', label: 'Global News', icon: <Newspaper className="w-4 h-4 text-emerald-400" /> },
+    { id: 'browser', label: 'Web Browser', icon: <Compass className="w-4 h-4 text-cyan-300" /> },
+    { id: 'deep_research', label: 'Deep Research', icon: <Sparkles className="w-4 h-4 text-amber-400" /> },
+    { id: 'bookmarks', label: 'Bookmarks', icon: <Bookmark className="w-4 h-4 text-yellow-400" /> },
     { id: 'history', label: 'History', icon: <History className="w-4 h-4 text-sky-400" /> },
+    { id: 'security', label: 'Security Center', icon: <ShieldCheck className="w-4 h-4 text-emerald-400" /> },
+    { id: 'extensions', label: 'Extensions', icon: <Blocks className="w-4 h-4 text-purple-400" /> },
+    { id: 'voice', label: 'Voice Assistant', icon: <Mic className="w-4 h-4 text-cyan-400 animate-pulse" />, badge: '3.0' },
     { id: 'web_intelligence', label: 'Web Intelligence', icon: <Globe className="w-4 h-4 text-teal-400" /> },
     { id: 'web_studio', label: 'Web Studio', icon: <Code2 className="w-4 h-4 text-emerald-400" /> },
     { id: 'explorer', label: 'Codebase Intelligence', icon: <Code2 className="w-4 h-4 text-indigo-400" /> },
     { id: 'projects', label: 'Projects', icon: <FolderTree className="w-4 h-4 text-blue-400" />, badge: activeProject?.name },
-    { id: 'extensions', label: 'Extensions', icon: <Blocks className="w-4 h-4 text-purple-400" /> },
     { id: 'settings', label: 'Settings', icon: <Settings className="w-4 h-4 text-slate-400" /> },
   ];
 
   const handleNavItemClick = (id: string) => {
-    if (id === 'extensions') {
+    if (id === 'voice') {
+      voiceService.openAssistant();
+    } else if (id === 'extensions') {
       if (onToggleExtensionPanel) {
         onToggleExtensionPanel();
       } else {
-        onNavigate('prompts');
+        onNavigate('extensions');
       }
     } else if (id === 'projects') {
       if (projects.length > 1 && activeProject) {

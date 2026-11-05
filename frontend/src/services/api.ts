@@ -31,6 +31,16 @@ import {
   ModelRouterStatus,
   OptimizationReport,
   AdaptiveIntentLog,
+  PersonaSettings,
+  BrowserTab,
+  BrowserBookmark,
+  BrowserHistoryItem,
+  BrowserNavigateResult,
+  ReaderArticle,
+  TorStatus,
+  SecurityAuditResult,
+  ResearchReport,
+  CuratedExtension,
 } from '../types/api';
 
 export interface HealthCheckResult {
@@ -1091,13 +1101,25 @@ export async function fetchAdaptiveIntentLogs(limit: number = 20): Promise<Adapt
   return await res.json();
 }
 
-export async function fetchSearchSuggestions(q: string): Promise<string[]> {
+// Client-side in-memory suggestion cache with 60s TTL
+const suggestionsCache = new Map<string, { timestamp: number; data: string[] }>();
+const SUGGESTIONS_CACHE_TTL_MS = 60_000;
+
+export async function fetchSearchSuggestions(q: string, signal?: AbortSignal): Promise<string[]> {
   const cleanQuery = q.trim();
   if (!cleanQuery) return [];
 
+  const cacheKey = cleanQuery.toLowerCase();
+  const cached = suggestionsCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < SUGGESTIONS_CACHE_TTL_MS) {
+    return cached.data;
+  }
+
   const baseUrl = getApiBaseUrl();
   try {
-    const res = await fetch(`${baseUrl}/api/v2/search/suggest?q=${encodeURIComponent(cleanQuery)}`);
+    const res = await fetch(`${baseUrl}/api/v2/search/suggest?q=${encodeURIComponent(cleanQuery)}`, {
+      signal,
+    });
     if (!res.ok) return [];
     const data = await res.json();
     if (!data || !Array.isArray(data.suggestions)) return [];
@@ -1122,9 +1144,17 @@ export async function fetchSearchSuggestions(q: string): Promise<string[]> {
       }
     }
 
+    if (suggestionsCache.size > 100) {
+      const oldestKey = suggestionsCache.keys().next().value;
+      if (oldestKey) suggestionsCache.delete(oldestKey);
+    }
+    suggestionsCache.set(cacheKey, { timestamp: Date.now(), data: stringList });
+
     return stringList;
-  } catch (err) {
-    console.warn('[ANVESHA] Search suggestions fetch suppressed error:', err);
+  } catch (err: any) {
+    if (err?.name !== 'AbortError') {
+      console.warn('[ANVESHA] Search suggestions fetch suppressed error:', err);
+    }
     return [];
   }
 }
@@ -1227,5 +1257,471 @@ export async function fetchProvidersStatus(): Promise<Record<string, any>> {
     return await res.json();
   } catch {
     return {};
+  }
+}
+
+// ==========================================
+// ANVESHA SEARCH 2.0 API CLIENT METHODS
+// ==========================================
+
+// 1. Dual Persona Settings
+export async function fetchPersonaSettings(): Promise<PersonaSettings | null> {
+  const baseUrl = getApiBaseUrl();
+  try {
+    const res = await fetch(`${baseUrl}/api/v2/personas/settings`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function updatePersonaSettings(settings: Partial<PersonaSettings>): Promise<PersonaSettings | null> {
+  const baseUrl = getApiBaseUrl();
+  try {
+    const res = await fetch(`${baseUrl}/api/v2/personas/settings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(settings),
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+// 2. Intelligent Browser Omnibox & Navigation
+export async function navigateOmnibox(
+  input: string,
+  tabMode: 'normal' | 'incognito' | 'tor' = 'normal',
+  currentUrl?: string
+): Promise<BrowserNavigateResult> {
+  const baseUrl = getApiBaseUrl();
+  const res = await fetch(`${baseUrl}/api/v2/browser/navigate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ input, tab_mode: tabMode, current_url: currentUrl }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Navigation error' }));
+    throw new Error(err.detail || 'Navigation error');
+  }
+  return await res.json();
+}
+
+// 3. Distraction-Free Reader Mode
+export async function extractReaderContent(url: string, rawHtml?: string): Promise<ReaderArticle> {
+  const baseUrl = getApiBaseUrl();
+  const res = await fetch(`${baseUrl}/api/v2/browser/reader`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url, raw_html: rawHtml }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to extract article' }));
+    throw new Error(err.detail || 'Failed to extract article');
+  }
+  return await res.json();
+}
+
+// 4. Browser Tabs Persistence
+export async function fetchBrowserTabs(): Promise<BrowserTab[]> {
+  const baseUrl = getApiBaseUrl();
+  try {
+    const res = await fetch(`${baseUrl}/api/v2/browser/tabs`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.tabs || [];
+  } catch {
+    return [];
+  }
+}
+
+export async function saveBrowserTab(tab: Partial<BrowserTab>): Promise<BrowserTab | null> {
+  const baseUrl = getApiBaseUrl();
+  try {
+    const res = await fetch(`${baseUrl}/api/v2/browser/tabs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(tab),
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function deleteBrowserTab(tabId: string): Promise<boolean> {
+  const baseUrl = getApiBaseUrl();
+  try {
+    const res = await fetch(`${baseUrl}/api/v2/browser/tabs/${tabId}`, { method: 'DELETE' });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+// 5. Browser Bookmarks & History
+export async function fetchBrowserBookmarks(): Promise<BrowserBookmark[]> {
+  const baseUrl = getApiBaseUrl();
+  try {
+    const res = await fetch(`${baseUrl}/api/v2/browser/bookmarks`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.bookmarks || [];
+  } catch {
+    return [];
+  }
+}
+
+export async function createBrowserBookmark(title: string, url: string, folder: string = 'General'): Promise<BrowserBookmark | null> {
+  const baseUrl = getApiBaseUrl();
+  try {
+    const res = await fetch(`${baseUrl}/api/v2/browser/bookmarks`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, url, folder }),
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function deleteBrowserBookmark(id: string): Promise<boolean> {
+  const baseUrl = getApiBaseUrl();
+  try {
+    const res = await fetch(`${baseUrl}/api/v2/browser/bookmarks/${id}`, { method: 'DELETE' });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function fetchBrowserHistory(): Promise<BrowserHistoryItem[]> {
+  const baseUrl = getApiBaseUrl();
+  try {
+    const res = await fetch(`${baseUrl}/api/v2/browser/history`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.history || [];
+  } catch {
+    return [];
+  }
+}
+
+export async function deleteBrowserHistoryItem(id: string): Promise<boolean> {
+  const baseUrl = getApiBaseUrl();
+  try {
+    const res = await fetch(`${baseUrl}/api/v2/browser/history/${id}`, { method: 'DELETE' });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+// 6. One-Click Privacy Cleanup
+export async function executePrivacyCleanup(options: {
+  clear_history?: boolean;
+  clear_bookmarks?: boolean;
+  clear_tabs?: boolean;
+  clear_cache?: boolean;
+  clear_conversations?: boolean;
+}): Promise<Record<string, any>> {
+  const baseUrl = getApiBaseUrl();
+  const res = await fetch(`${baseUrl}/api/v2/browser/cleanup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(options),
+  });
+  if (!res.ok) throw new Error('Cleanup failed');
+  return await res.json();
+}
+
+// 7. Tor Network Status & Enforcement
+export async function fetchTorStatus(): Promise<TorStatus> {
+  const baseUrl = getApiBaseUrl();
+  const res = await fetch(`${baseUrl}/api/v2/tor/status`);
+  if (!res.ok) throw new Error('Failed to fetch Tor status');
+  return await res.json();
+}
+
+// 8. Security Center Audit & Settings
+export async function fetchSecurityAudit(): Promise<SecurityAuditResult> {
+  const baseUrl = getApiBaseUrl();
+  const res = await fetch(`${baseUrl}/api/v2/security/audit`);
+  if (!res.ok) throw new Error('Failed to run security audit');
+  return await res.json();
+}
+
+export async function fetchSecuritySettings(): Promise<Record<string, any>> {
+  const baseUrl = getApiBaseUrl();
+  const res = await fetch(`${baseUrl}/api/v2/security/settings`);
+  if (!res.ok) return {};
+  return await res.json();
+}
+
+export async function updateSecuritySettings(settings: Record<string, any>): Promise<Record<string, any>> {
+  const baseUrl = getApiBaseUrl();
+  const res = await fetch(`${baseUrl}/api/v2/security/settings`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(settings),
+  });
+  if (!res.ok) throw new Error('Failed to update security settings');
+  return await res.json();
+}
+
+// 9. Research Reports Library
+export async function fetchResearchReports(): Promise<ResearchReport[]> {
+  const baseUrl = getApiBaseUrl();
+  try {
+    const res = await fetch(`${baseUrl}/api/v2/research/reports`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.reports || [];
+  } catch {
+    return [];
+  }
+}
+
+export async function updateResearchReport(id: string, updates: Partial<ResearchReport>): Promise<boolean> {
+  const baseUrl = getApiBaseUrl();
+  try {
+    const res = await fetch(`${baseUrl}/api/v2/research/reports/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function deleteResearchReport(id: string): Promise<boolean> {
+  const baseUrl = getApiBaseUrl();
+  try {
+    const res = await fetch(`${baseUrl}/api/v2/research/reports/${id}`, { method: 'DELETE' });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+// 10. Curated Extensions Marketplace
+export async function fetchCuratedExtensions(): Promise<CuratedExtension[]> {
+  const baseUrl = getApiBaseUrl();
+  try {
+    const res = await fetch(`${baseUrl}/api/extensions`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.extensions || [];
+  } catch {
+    return [];
+  }
+}
+
+export async function installMarketplaceExtension(id: string): Promise<boolean> {
+  const baseUrl = getApiBaseUrl();
+  try {
+    const res = await fetch(`${baseUrl}/api/extensions/${id}/install`, { method: 'POST' });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function uninstallMarketplaceExtension(id: string): Promise<boolean> {
+  const baseUrl = getApiBaseUrl();
+  try {
+    const res = await fetch(`${baseUrl}/api/extensions/${id}/uninstall`, { method: 'POST' });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function toggleMarketplaceExtension(id: string): Promise<boolean> {
+  const baseUrl = getApiBaseUrl();
+  try {
+    const res = await fetch(`${baseUrl}/api/extensions/${id}/toggle`, { method: 'POST' });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+// ==========================================
+// ANVESHA WORLDWIDE GLOBAL NEWS API SERVICE
+// ==========================================
+
+export async function fetchWorldwideNews(params?: {
+  country?: string;
+  language?: string;
+  category?: string;
+  sort?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<import('../types/api').GlobalNewsResponse> {
+  const baseUrl = getApiBaseUrl();
+  const q = new URLSearchParams();
+  if (params?.country && params.country !== 'WORLD') q.set('country', params.country);
+  if (params?.language && params.language !== 'all') q.set('language', params.language);
+  if (params?.category && params.category !== 'all' && params.category !== 'top') q.set('category', params.category);
+  if (params?.sort) q.set('sort', params.sort);
+  if (params?.limit) q.set('limit', String(params.limit));
+  if (params?.offset) q.set('offset', String(params.offset));
+
+  const res = await fetch(`${baseUrl}/api/v1/news/worldwide?${q.toString()}`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch worldwide news: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function fetchNewsHeadlines(category?: string, limit = 15): Promise<import('../types/api').GlobalNewsArticle[]> {
+  const baseUrl = getApiBaseUrl();
+  const q = new URLSearchParams();
+  if (category) q.set('category', category);
+  q.set('limit', String(limit));
+
+  const res = await fetch(`${baseUrl}/api/v1/news/headlines?${q.toString()}`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function searchWorldwideNews(
+  query: string,
+  params?: {
+    country?: string;
+    language?: string;
+    category?: string;
+    sort?: string;
+    limit?: number;
+    offset?: number;
+  }
+): Promise<{ query: string; total: number; articles: import('../types/api').GlobalNewsArticle[]; clusters: import('../types/api').GlobalStoryCluster[] }> {
+  const baseUrl = getApiBaseUrl();
+  const q = new URLSearchParams({ q: query });
+  if (params?.country && params.country !== 'WORLD') q.set('country', params.country);
+  if (params?.language && params.language !== 'all') q.set('language', params.language);
+  if (params?.category && params.category !== 'all' && params.category !== 'top') q.set('category', params.category);
+  if (params?.sort) q.set('sort', params.sort);
+  if (params?.limit) q.set('limit', String(params.limit));
+  if (params?.offset) q.set('offset', String(params.offset));
+
+  const res = await fetch(`${baseUrl}/api/v1/news/search?${q.toString()}`);
+  if (!res.ok) {
+    throw new Error(`News search failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function fetchNewsCountries(): Promise<import('../types/api').CountryOption[]> {
+  const baseUrl = getApiBaseUrl();
+  try {
+    const res = await fetch(`${baseUrl}/api/v1/news/countries`);
+    if (res.ok) {
+      const data = await res.json();
+      return data.countries || [];
+    }
+  } catch {}
+  return [];
+}
+
+export async function fetchNewsLanguages(): Promise<import('../types/api').LanguageOption[]> {
+  const baseUrl = getApiBaseUrl();
+  try {
+    const res = await fetch(`${baseUrl}/api/v1/news/languages`);
+    if (res.ok) {
+      const data = await res.json();
+      return data.languages || [];
+    }
+  } catch {}
+  return [];
+}
+
+export async function fetchNewsCategories(): Promise<import('../types/api').CategoryOption[]> {
+  const baseUrl = getApiBaseUrl();
+  try {
+    const res = await fetch(`${baseUrl}/api/v1/news/categories`);
+    if (res.ok) {
+      const data = await res.json();
+      return data.categories || [];
+    }
+  } catch {}
+  return [];
+}
+
+export async function fetchNewsTrending(): Promise<import('../types/api').GlobalNewsTrendingItem[]> {
+  const baseUrl = getApiBaseUrl();
+  try {
+    const res = await fetch(`${baseUrl}/api/v1/news/trending`);
+    if (res.ok) {
+      const data = await res.json();
+      return data.trending || [];
+    }
+  } catch {}
+  return [];
+}
+
+export async function fetchNewsStatus(): Promise<any> {
+  const baseUrl = getApiBaseUrl();
+  try {
+    const res = await fetch(`${baseUrl}/api/v1/news/status`);
+    if (res.ok) return res.json();
+  } catch {}
+  return { status: 'healthy', healthy: 0, degraded: 0, down: 0 };
+}
+
+export async function generateNewsBriefing(params?: {
+  topic?: string;
+  country?: string;
+  language?: string;
+}): Promise<import('../types/api').GlobalNewsBriefing> {
+  const baseUrl = getApiBaseUrl();
+  const res = await fetch(`${baseUrl}/api/v1/news/briefing`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params || {}),
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to generate briefing: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function askAIAboutStory(storyId: string, question: string): Promise<import('../types/api').AskAIStoryResult> {
+  const baseUrl = getApiBaseUrl();
+  const res = await fetch(`${baseUrl}/api/v1/news/ask-ai`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ story_id: storyId, question }),
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to analyze story: ${res.status}`);
+  }
+  return res.json();
+}
+
+export function createNewsSSEConnection(onUpdate: (data: any) => void): () => void {
+  const baseUrl = getApiBaseUrl();
+  try {
+    const eventSource = new EventSource(`${baseUrl}/api/v1/news/updates`);
+    eventSource.onmessage = (event) => {
+      try {
+        const parsed = JSON.parse(event.data);
+        onUpdate(parsed);
+      } catch {}
+    };
+    return () => {
+      eventSource.close();
+    };
+  } catch {
+    return () => {};
   }
 }

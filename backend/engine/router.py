@@ -102,6 +102,14 @@ def classify_query(query: str, workspace_root: str) -> Dict[str, Any]:
             "is_navigational": True,
         }
 
+    # 0.5 Live News and Worldwide Headline intent detection
+    if any(re.search(rf"\b{kw}\b", query_lower) for kw in ["news", "headline", "headlines", "breaking news", "world news", "latest news"]):
+        return {
+            "mode_selected": "news",
+            "confidence": 0.95,
+            "reason": "Detected live worldwide news and headline inquiry.",
+        }
+
     # 1. File extension match (e.g. "main.py", "App.tsx", "test.json")
     for ext in FILE_EXTENSIONS:
         if ext in query_lower or query_lower.endswith(ext):

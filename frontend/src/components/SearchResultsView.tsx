@@ -19,9 +19,11 @@ import {
   CloudLightning,
   CloudFog,
   CloudDrizzle,
-  CloudSnow
+  CloudSnow,
+  BookOpen
 } from 'lucide-react';
 import { voiceAssistant } from '../services/voiceAssistant';
+import { voiceService } from '../services/voiceService';
 import {
   SearchResponse,
   SearchResultItem,
@@ -40,6 +42,7 @@ import {
 import { streamSearchV2, fetchSearchSuggestions, fetchVerticalSearch } from '../services/api';
 import { FileViewerModal } from './FileViewerModal';
 import { CodebaseToolsPanel } from './CodebaseToolsPanel';
+import { GlobalNewsView } from './GlobalNewsView';
 
 // Google-Inspired Search Components
 import { SearchResultsLayout } from './search/SearchResultsLayout';
@@ -58,6 +61,7 @@ interface SearchResultsViewProps {
   onNewSearch: (query: string, mode?: SearchMode) => void;
   onOpenSettings?: () => void;
   onConversationCreated?: (id: string) => void;
+  onNavigateToNews?: () => void;
 }
 
 function getRelatedQuestions(q: string): string[] {
@@ -152,9 +156,17 @@ export const SearchResultsView: React.FC<SearchResultsViewProps> = ({
   onNewSearch,
   onOpenSettings,
   onConversationCreated,
+  onNavigateToNews: _onNavigateToNews,
 }) => {
-  // Navigation tabs in results view
-  const [searchNavTab, setSearchNavTab] = useState<SearchNavTabId>('all');
+  // Navigation tabs in results view with intelligent intent routing
+  const [searchNavTab, setSearchNavTab] = useState<SearchNavTabId>(() => {
+    if (searchData.mode_requested === 'news') return 'news';
+    const q = (searchData.query || '').toLowerCase();
+    if (q.includes('news') || q.includes('headlines') || q.includes('breaking')) {
+      return 'news';
+    }
+    return 'all';
+  });
 
   // Query & Mode state
   const [headerQuery, setHeaderQuery] = useState(searchData.query);
@@ -193,7 +205,7 @@ export const SearchResultsView: React.FC<SearchResultsViewProps> = ({
   const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
 
   // Voice Search State
-  const [isListeningVoice, setIsListeningVoice] = useState<boolean>(false);
+  const [isListeningVoice] = useState<boolean>(false);
   const [voiceNotification, setVoiceNotification] = useState<string | null>(null);
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
 
@@ -431,59 +443,9 @@ export const SearchResultsView: React.FC<SearchResultsViewProps> = ({
     setShowSuggestions(false);
   };
 
-  // Web Speech API Voice Search
+  // Launch ANVESHA Voice Engine 3.0
   const handleToggleVoice = () => {
-    const win = window as any;
-    const SpeechRecognition = win.SpeechRecognition || win.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      setVoiceNotification('Voice search requires a Chromium or Safari browser with microphone access.');
-      setTimeout(() => setVoiceNotification(null), 4500);
-      return;
-    }
-
-    if (isListeningVoice) {
-      setIsListeningVoice(false);
-      return;
-    }
-
-    try {
-      const recognition = new SpeechRecognition();
-      recognition.lang = 'en-US';
-      recognition.interimResults = true;
-      recognition.maxAlternatives = 1;
-
-      recognition.onstart = () => {
-        setIsListeningVoice(true);
-        setVoiceNotification('Listening... Speak now.');
-      };
-
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setHeaderQuery(transcript);
-        if (event.results[0].isFinal) {
-          setIsListeningVoice(false);
-          setVoiceNotification(null);
-          onNewSearch(transcript, currentMode);
-          runStreamingSearch(transcript, currentMode, []);
-        }
-      };
-
-      recognition.onerror = (event: any) => {
-        setIsListeningVoice(false);
-        setVoiceNotification(`Voice error: ${event.error || 'Microphone unavailable'}`);
-        setTimeout(() => setVoiceNotification(null), 4000);
-      };
-
-      recognition.onend = () => {
-        setIsListeningVoice(false);
-      };
-
-      recognition.start();
-    } catch (err: any) {
-      setIsListeningVoice(false);
-      setVoiceNotification('Could not initialize microphone.');
-      setTimeout(() => setVoiceNotification(null), 4000);
-    }
+    voiceService.openAssistant();
   };
 
   const handleFollowUpSubmit = (question: string) => {
@@ -721,44 +683,73 @@ export const SearchResultsView: React.FC<SearchResultsViewProps> = ({
         </div>
       )}
 
-      {/* VIEW B: News Category View */}
+      {/* VIEW B: Dedicated Worldwide Live News Intelligence Tab */}
       {searchNavTab === 'news' && (
-        <div className="space-y-4 max-w-[652px]">
-          <div className="flex items-center justify-between border-b border-[#3c4043] pb-3">
-            <h3 className="text-base font-normal text-[#e8eaed]">
-              News Articles ({newsArticles.length})
-            </h3>
-          </div>
+        <div className="w-full text-left">
+          <GlobalNewsView initialQuery={headerQuery} isEmbedded={true} />
+        </div>
+      )}
 
-          {newsArticles.length > 0 ? (
-            <div className="space-y-4">
-              {newsArticles.map((art, idx) => (
-                <div
-                  key={idx}
-                  className="py-3 border-b border-[#3c4043]/50 text-left space-y-1"
-                >
-                  <div className="text-xs text-[#9aa0a6] flex items-center gap-2">
-                    <span className="font-medium text-[#bdc1c6]">{art.source}</span>
-                    <span>&bull;</span>
-                    <span>{art.published_at}</span>
+      {/* VIEW W: Web Search Only Tab */}
+      {searchNavTab === 'web' && (
+        <div className="space-y-4 max-w-[652px] text-left">
+          {navigationalResult && (
+            <NavigationalResultCard result={navigationalResult} />
+          )}
+          {webResults.length > 0 ? (
+            <OrganicResultsList
+              results={webResults}
+              onLoadMore={handleLoadMore}
+              isLoadingMore={isLoadingMore}
+              hasMore={hasMore}
+            />
+          ) : (
+            <div className="py-12 text-center text-[#9aa0a6] text-sm">
+              {webError ? `Web search notification: ${webError}` : 'No web search results found for this query.'}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* VIEW R: Books & Research Mode Tab */}
+      {searchNavTab === 'research' && (
+        <div className="space-y-4 max-w-[652px] text-left">
+          <div className="p-4 rounded-2xl bg-[#282a2c] border border-[#3c4043] space-y-2">
+            <div className="flex items-center gap-2 text-[#8ab4f8]">
+              <BookOpen className="w-4 h-4" />
+              <h3 className="text-sm font-medium">Academic & Literature Research Mode</h3>
+            </div>
+            <p className="text-xs text-[#bdc1c6] leading-relaxed">
+              Synthesizing scholarly citations, peer-reviewed literature references, and academic sources for &ldquo;{headerQuery}&rdquo;.
+            </p>
+          </div>
+          {citations.length > 0 ? (
+            <div className="space-y-3">
+              <h4 className="text-xs font-mono uppercase tracking-wider text-[#9aa0a6]">Identified Scholarly Sources</h4>
+              {citations.map((cite, idx) => (
+                <div key={idx} className="p-3.5 rounded-xl bg-[#202124] border border-[#3c4043] text-xs space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-[#8ab4f8]">{cite.title}</span>
+                    <span className="text-[10px] text-[#9aa0a6] font-mono px-1.5 py-0.5 rounded bg-[#303134]">Source #{idx + 1}</span>
                   </div>
-                  <h4 className="text-base font-normal">
+                  <p className="text-[#bdc1c6] text-[11px] leading-relaxed">{cite.snippet}</p>
+                  {cite.url && (
                     <a
-                      href={art.url}
+                      href={cite.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[#8ab4f8] hover:underline block leading-snug"
+                      className="text-[#8ab4f8] hover:underline text-[11px] inline-flex items-center gap-1 pt-1"
                     >
-                      {art.title}
+                      <span>Read Publication</span>
+                      <ExternalLink className="w-3 h-3" />
                     </a>
-                  </h4>
-                  <p className="text-xs text-[#bdc1c6] leading-relaxed">{art.snippet}</p>
+                  )}
                 </div>
               ))}
             </div>
           ) : (
             <div className="py-12 text-center text-[#9aa0a6] text-sm">
-              No recent news articles found for this topic.
+              No academic citations or research records found for this query.
             </div>
           )}
         </div>
